@@ -66,10 +66,34 @@ typedef struct FM_CallbackNode
 /* Exported variables --------------------------------------------------------*/
 /* Exported macros -----------------------------------------------------------*/
 /* Exported functions ------------------------------------------------------- */
+void FM_Init (void);
 FM_Cmd_Status_t FM_Write(uint32_t *Src, uint32_t *Dest, int32_t Size, FM_CallbackNode_t *CallbackNode);
 FM_Cmd_Status_t FM_Erase(uint32_t FirstSect, uint32_t NbrSect, FM_CallbackNode_t *CallbackNode);
 void FM_BackgroundProcess (void);
 void FM_ProcessRequest (void);
+
+/* Exported functions to be implemented by the user ------------------------- */
+/**
+ * @brief  Take ownership on the Flash mutex
+ *
+ * @details This function shall be implemented by the user
+ *
+ * @return Status of the command
+ * @retval FM_Cmd_Status_t::FM_OK
+ * @retval FM_Cmd_Status_t::FM_ERROR
+ */
+ extern FM_Cmd_Status_t FM_MutexTake (void);
+
+ /**
+  * @brief  Release ownership on the Flash mutex
+  *
+  * @details This function shall be implemented by the user
+  *
+  * @return Status of the command
+  * @retval FM_Cmd_Status_t::FM_OK
+  * @retval FM_Cmd_Status_t::FM_ERROR
+  */
+ extern FM_Cmd_Status_t FM_MutexRelease (void);
 
 #ifdef __cplusplus
 }

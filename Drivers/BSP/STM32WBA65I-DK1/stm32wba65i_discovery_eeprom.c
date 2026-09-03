@@ -23,14 +23,44 @@
 * @{
 */
 
-/* -------- Static functions prototypes --------------------------------------------- */
-static M95P32_CommonDrv_t *M95P32Drv[BSP_EEPROM_INSTANCES_NBR];
+/** @addtogroup STM32WBA65I_DK1
+  * @{
+  */
+
+/** @defgroup STM32WBA65I_DK1_EEPROM EEPROM
+  * @{
+  */
+
+/** @defgroup STM32WBA65I_DK1_EEPROM_Exported_Variables EEPROM Exported Variables
+  * @{
+  */
 void *M95P32CompObj[BSP_EEPROM_INSTANCES_NBR];
+/**
+  * @}
+  */
+
+/** @defgroup STM32WBA65I_DK1_EEPROM_Private_Variables EEPROM Private Variables
+  * @{
+  */
+static M95P32_CommonDrv_t *M95P32Drv[BSP_EEPROM_INSTANCES_NBR];
+/**
+  * @}
+  */
+
+/** @defgroup STM32WBA65I_DK1_EEPROM_Private_FunctionPrototypes EEPROM Private Function Prototypes
+  * @{
+  */
 static int32_t M95P32_Probe(void);
+/**
+  * @}
+  */
+
+/** @defgroup STM32WBA65I_DK1_EEPROM_Exported_Functions EEPROM Exported Functions
+  * @{
+  */
 
 /**
   * @brief  This function gives high on selected control pin
-  * @param  None
   * @retval None
   */
 void EEPROMEX_CTRL_HIGH(void)
@@ -40,7 +70,6 @@ void EEPROMEX_CTRL_HIGH(void)
 
 /**
   * @brief  This function gives low on selected control pin
-  * @param  None
   * @retval None
   */
 void EEPROMEX_CTRL_LOW(void)
@@ -737,11 +766,16 @@ int32_t BSP_EEPROM_SoftReset(uint32_t Instance)
 
   return ret;
 }
+/**
+  * @}
+  */
 
+/** @defgroup STM32WBA65I_DK1_EEPROM_Private_Functions EEPROM Private Functions
+  * @{
+  */
 
 /**
   * @brief  Register Bus IOs for instance M95P32 if component ID is OK
-  * @param  None
   * @retval BSP status
   */
 static int32_t M95P32_Probe(void)
@@ -777,14 +811,18 @@ static int32_t M95P32_Probe(void)
 }
 
 /**
-* @}
-*/
+  * @}
+  */
 
 /**
-* @}
-*/
+  * @}
+  */
 
 /**
-* @}
-*/
+  * @}
+  */
+
+/**
+  * @}
+  */
 

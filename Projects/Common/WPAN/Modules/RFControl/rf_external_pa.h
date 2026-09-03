@@ -1,4 +1,3 @@
-/* USER CODE BEGIN Header */
 /**
   ******************************************************************************
   * @file    rf_external_pa.h
@@ -16,9 +15,13 @@
   *
   ******************************************************************************
   */
-/* USER CODE END Header */
+
 #ifndef RF_EXTERNAL_PA_H
 #define RF_EXTERNAL_PA_H
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #include "stm32wbaxx.h"
 
@@ -49,5 +52,9 @@ static const st_gpio_epa_t rf_external_pa_gpio_table[] =
 };
 
 void RF_CONTROL_ExternalPA(rf_external_pa_state_t state);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* RF_EXTERNAL_PA_H */

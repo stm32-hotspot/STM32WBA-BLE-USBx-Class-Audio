@@ -20,9 +20,9 @@
 
 #include "app_common.h"
 #include "bleplat.h"
-#include "nvm.h"
+#include "app_ble.h"
 #include "baes.h"
-#include "bpka.h"
+#include "pka_ctrl.h"
 #include "ble_timer.h"
 #include "blestack.h"
 #include "host_stack_if.h"
@@ -33,47 +33,20 @@
 
 void BLEPLAT_Init( void )
 {
-  BAES_Reset( );
-  BPKA_Reset( );
-  BLE_TIMER_Init();
+
+  return;
 }
 
 /*****************************************************************************/
 
-int BLEPLAT_NvmAdd( uint8_t type,
-                    const uint8_t* data,
-                    uint16_t size,
-                    const uint8_t* extra_data,
-                    uint16_t extra_size )
+void BLEPLAT_NvmStore( const uint64_t* ptr,
+                              uint16_t size )
 {
-  return NVM_Add( type, data, size, extra_data, extra_size );
-}
+  UNUSED(ptr);
+  UNUSED(size);
 
-/*****************************************************************************/
-
-int BLEPLAT_NvmGet( uint8_t mode,
-                    uint8_t type,
-                    uint16_t offset,
-                    uint8_t* data,
-                    uint16_t size )
-{
-  return NVM_Get( mode, type, offset, data, size );
-}
-
-/*****************************************************************************/
-
-int BLEPLAT_NvmCompare( uint16_t offset,
-                        const uint8_t* data,
-                        uint16_t size )
-{
-  return NVM_Compare( offset, data, size );
-}
-
-/*****************************************************************************/
-
-void BLEPLAT_NvmDiscard( uint8_t mode )
-{
-  NVM_Discard( mode );
+  APP_BLE_HostNvmStore();
+  return;
 }
 
 /*****************************************************************************/
@@ -132,14 +105,14 @@ int BLEPLAT_AesCcmCrypt( uint8_t mode,
 
 int BLEPLAT_PkaStartP256Key( const uint32_t* local_private_key )
 {
-  return BPKA_StartP256Key( local_private_key );
+  return PKACTRL_StartP256Key( local_private_key );
 }
 
 /*****************************************************************************/
 
 void BLEPLAT_PkaReadP256Key( uint32_t* local_public_key )
 {
-  BPKA_ReadP256Key( local_public_key );
+  PKACTRL_ReadP256Key( local_public_key );
 }
 
 /*****************************************************************************/
@@ -147,19 +120,19 @@ void BLEPLAT_PkaReadP256Key( uint32_t* local_public_key )
 int BLEPLAT_PkaStartDhKey( const uint32_t* local_private_key,
                            const uint32_t* remote_public_key )
 {
-  return BPKA_StartDhKey( local_private_key, remote_public_key );
+  return PKACTRL_StartDhKey( local_private_key, remote_public_key );
 }
 
 /*****************************************************************************/
 
 int BLEPLAT_PkaReadDhKey( uint32_t* dh_key )
 {
-  return BPKA_ReadDhKey( dh_key );
+  return PKACTRL_ReadDhKey( dh_key );
 }
 
 /*****************************************************************************/
 
-void BPKACB_Complete( void )
+void PKACTRL_CB_Complete( void )
 {
   BLEPLATCB_PkaComplete( );
 
@@ -180,5 +153,4 @@ void BLEPLAT_TimerStop( uint16_t id )
 {
   BLE_TIMER_Stop( id );
 }
-
 /*****************************************************************************/

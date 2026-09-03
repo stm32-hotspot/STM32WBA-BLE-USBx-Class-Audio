@@ -375,7 +375,7 @@ typedef enum
                                                  * periodic advertising train has been established
                                                  * It is advised that the application terminates the scanning by using
                                                  * the BAP_BSNK_StopAdvReportParsing and aci_gap_terminate_gap_proc
-                                                 * uppon reception of this event
+                                                 * upon reception of this event
                                                  * The pInfo field indicates the details about the Periodic Advertising
                                                  * train through the BAP_PA_Sync_Established_Data_t type
                                                  */
@@ -435,8 +435,15 @@ typedef enum
                                                  * aci_gap_ext_start_scan() (with Scan Procedure GAP_OBSERVATION_PROC)
                                                  * functions.
                                                  * The pInfo field contain a pointer to a status which the application
-                                                 * should set to BLE_STATUS_SUCCESS if it suceeded to start the scanning
+                                                 * should set to BLE_STATUS_SUCCESS if it succeeded to start the scanning
                                                  * or to any other status value otherwise */
+                                                 
+  CAP_BROADCAST_SDE_BIS_PREFERENCE_REQ_EVT,     /* Event notified by Scan Delegator when a Broadcast Assistant requires
+                                                 * to synchronize a BIG without providing preference on the subgroup or 
+                                                 * the BIS(s) to synchronize. 
+                                                 * The pInfo field contains a pointer to an array of BIS Sync across all 
+                                                 * subgroups (type uint32_t *) that the application can update based on 
+                                                 * BASE information and local preferences */
 
 /* #############################################################################
    #                          BROADCAST ASSISTANT Events                       #
@@ -603,10 +610,30 @@ typedef enum
                                                  * The pInfo field indicates information associated to the VCP subevent
                                                  * Instance through the VCP_Notification_Evt_t type.
                                                  */
-  CAP_CSIP_META_EVT,                             /* This event is notified for Coordinated Set Identification Profile.
+  CAP_CSIP_META_EVT,                            /* This event is notified for Coordinated Set Identification Profile.
                                                  * A subevent is associated of type CSIP_NotCode_t.
                                                  * The pInfo field indicates information associated to the VCP subevent
                                                  * Instance through the CSIP_Notification_Evt_t type.
+                                                 */
+  CAP_CSIP_LOCK_REQUEST_PROC_COMPLETE_EVT,      /* This event is reported once the CSIP Set Coordinator has
+                                                 * locked all Set Members
+                                                 * with BLE_STATUS_SUCCESS if successful
+                                                 * with BLE_STATUS_FAILED if some are already locked and the
+                                                 * Unlock will be start automatically.
+                                                 * This event is reported when the procedure is started by the application
+                                                 * through CAP_CSIP_StartLockRequestProcedure
+                                                 */
+  CAP_CSIP_LOCK_RELEASE_PROC_COMPLETE_EVT,      /* This event is reported once the CSIP Set Coordinator has
+                                                 * unlocked all Set Members
+                                                 * The status indicates the result of this procedure
+                                                 * This event is reported when the procedure is started by the application
+                                                 * through CAP_CSIP_StartLockReleaseProcedure
+                                                 */
+  CAP_CSIP_ORDERED_ACCESS_PROC_COMPLETE_EVT,    /* This event is reported once the CSIP Set Coordinator has
+                                                 * checked that all Set Members are unlocked
+                                                 * The status indicates the result of this procedure
+                                                 * This event is reported when the procedure is started by the application
+                                                 * through CAP_CSIP_StartOrderedAccessProcedure
                                                  */
 } CAP_NotCode_t;
 
@@ -709,9 +736,9 @@ typedef struct
   uint16_t                              ConnHandle;    /* Connection Handle of the remote CAP Acceptor */
   Audio_Role_t                          StreamRole;    /* Mask of Audio Role to configure on the remote Acceptor */
   CAP_Unicast_Audio_Stream_Params_t     StreamSnk;     /* Sink Stream Configuration (from Initiator to Acceptor)
-                                                          Used only if StreamRole countains AUDIO_ROLE_SINK */
+                                                          Used only if StreamRole contains AUDIO_ROLE_SINK */
   CAP_Unicast_Audio_Stream_Params_t     StreamSrc;     /* Source Stream Configuration (from Acceptor to Initiator)
-                                                          Used only if StreamRole countains AUDIO_ROLE_SOURCE */
+                                                          Used only if StreamRole contains AUDIO_ROLE_SOURCE */
 } CAP_Unicast_AudioStart_Stream_Params_t;
 
 /*Structure used in parameter of the CAP_Unicast_AudioUpdate() API*/
@@ -730,7 +757,7 @@ typedef struct
   BAP_BASE_Group_t                      *pBaseGroup; /* A pointer to a BASE group for the Broadcast Source */
   uint8_t                               BigHandle; /* The Handle of the BIG to create */
   uint8_t                               Rtn; /* The Number of retransmission of the BIG to create */
-  Target_Phy_t                          Phy; /* The PHY of the BIG to create */
+  Preferred_PHY_t                       Phy; /* The PHY of the BIG to create */
   BAP_Packing_t                         Packing; /* The Packing of the BIG */
   uint16_t                              MaxTransportLatency; /* The Maximum Transport Latency of the BIG to create */
   uint8_t                               Encryption; /* 0x00 to disable encryption, 0x01 to enable it */
@@ -771,8 +798,8 @@ typedef struct
   uint8_t  aBroadcastId[3u];                      /* Broadcast_ID of the Broadcast Source */
 
   uint8_t  PaSync;                               /* 0x00: Do not synchronize to PA
-                                                  * 0x01: Synchronize to PA – PAST available
-                                                  * 0x02: Synchronize to PA – PAST not available
+                                                  * 0x01: Synchronize to PA - PAST available
+                                                  * 0x02: Synchronize to PA - PAST not available
                                                   */
 
   uint16_t  SyncHandle;                          /* Handle of the PA synchronization if the CAP Commander is

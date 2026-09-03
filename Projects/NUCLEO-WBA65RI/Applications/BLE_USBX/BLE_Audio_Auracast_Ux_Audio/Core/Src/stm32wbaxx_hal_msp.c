@@ -7,7 +7,7 @@
   ******************************************************************************
   * @attention
   *
-  * Copyright (c) 2022 STMicroelectronics.
+  * Copyright (c) 2024 STMicroelectronics.
   * All rights reserved.
   *
   * This software is licensed under terms that can be found in the LICENSE file
@@ -17,13 +17,10 @@
   ******************************************************************************
   */
 /* USER CODE END Header */
-
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 /* USER CODE BEGIN Includes */
 /* USER CODE END Includes */
-extern DMA_HandleTypeDef handle_GPDMA1_Channel6;
-
 extern DMA_HandleTypeDef handle_GPDMA1_Channel0;
 
 /* Private typedef -----------------------------------------------------------*/
@@ -171,62 +168,6 @@ void HAL_RAMCFG_MspDeInit(RAMCFG_HandleTypeDef* hramcfg)
 }
 
 /**
-  * @brief RNG MSP Initialization
-  * This function configures the hardware resources used in this example
-  * @param hrng: RNG handle pointer
-  * @retval None
-  */
-void HAL_RNG_MspInit(RNG_HandleTypeDef* hrng)
-{
-  RCC_PeriphCLKInitTypeDef PeriphClkInit = {0};
-  if(hrng->Instance==RNG)
-  {
-    /* USER CODE BEGIN RNG_MspInit 0 */
-
-    /* USER CODE END RNG_MspInit 0 */
-
-    /** Initializes the peripherals clock
-    */
-    PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_RNG;
-    PeriphClkInit.RngClockSelection = RCC_RNGCLKSOURCE_HSI;
-    if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK)
-    {
-      Error_Handler();
-    }
-
-    /* Peripheral clock enable */
-    __HAL_RCC_RNG_CLK_ENABLE();
-    /* USER CODE BEGIN RNG_MspInit 1 */
-
-    /* USER CODE END RNG_MspInit 1 */
-
-  }
-
-}
-
-/**
-  * @brief RNG MSP De-Initialization
-  * This function freeze the hardware resources used in this example
-  * @param hrng: RNG handle pointer
-  * @retval None
-  */
-void HAL_RNG_MspDeInit(RNG_HandleTypeDef* hrng)
-{
-  if(hrng->Instance==RNG)
-  {
-    /* USER CODE BEGIN RNG_MspDeInit 0 */
-
-    /* USER CODE END RNG_MspDeInit 0 */
-    /* Peripheral clock disable */
-    __HAL_RCC_RNG_CLK_DISABLE();
-    /* USER CODE BEGIN RNG_MspDeInit 1 */
-
-    /* USER CODE END RNG_MspDeInit 1 */
-  }
-
-}
-
-/**
   * @brief RTC MSP Initialization
   * This function configures the hardware resources used in this example
   * @param hrtc: RTC handle pointer
@@ -317,10 +258,8 @@ void HAL_UART_MspInit(UART_HandleTypeDef* huart)
     __HAL_RCC_USART1_CLK_ENABLE();
 
     __HAL_RCC_GPIOB_CLK_ENABLE();
-    __HAL_RCC_GPIOA_CLK_ENABLE();
     /**USART1 GPIO Configuration
     PB12     ------> USART1_TX
-    PA8     ------> USART1_RX
     */
     GPIO_InitStruct.Pin = GPIO_PIN_12;
     GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
@@ -329,41 +268,7 @@ void HAL_UART_MspInit(UART_HandleTypeDef* huart)
     GPIO_InitStruct.Alternate = GPIO_AF7_USART1;
     HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
-    GPIO_InitStruct.Pin = GPIO_PIN_8;
-    GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-    GPIO_InitStruct.Alternate = GPIO_AF7_USART1;
-    HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-
     /* USART1 DMA Init */
-    /* GPDMA1_REQUEST_USART1_RX Init */
-    handle_GPDMA1_Channel6.Instance = GPDMA1_Channel6;
-    handle_GPDMA1_Channel6.Init.Request = GPDMA1_REQUEST_USART1_RX;
-    handle_GPDMA1_Channel6.Init.BlkHWRequest = DMA_BREQ_SINGLE_BURST;
-    handle_GPDMA1_Channel6.Init.Direction = DMA_PERIPH_TO_MEMORY;
-    handle_GPDMA1_Channel6.Init.SrcInc = DMA_SINC_FIXED;
-    handle_GPDMA1_Channel6.Init.DestInc = DMA_DINC_INCREMENTED;
-    handle_GPDMA1_Channel6.Init.SrcDataWidth = DMA_SRC_DATAWIDTH_BYTE;
-    handle_GPDMA1_Channel6.Init.DestDataWidth = DMA_DEST_DATAWIDTH_BYTE;
-    handle_GPDMA1_Channel6.Init.Priority = DMA_LOW_PRIORITY_LOW_WEIGHT;
-    handle_GPDMA1_Channel6.Init.SrcBurstLength = 1;
-    handle_GPDMA1_Channel6.Init.DestBurstLength = 1;
-    handle_GPDMA1_Channel6.Init.TransferAllocatedPort = DMA_SRC_ALLOCATED_PORT0|DMA_DEST_ALLOCATED_PORT0;
-    handle_GPDMA1_Channel6.Init.TransferEventMode = DMA_TCEM_BLOCK_TRANSFER;
-    handle_GPDMA1_Channel6.Init.Mode = DMA_NORMAL;
-    if (HAL_DMA_Init(&handle_GPDMA1_Channel6) != HAL_OK)
-    {
-      Error_Handler();
-    }
-
-    __HAL_LINKDMA(huart, hdmarx, handle_GPDMA1_Channel6);
-
-    if (HAL_DMA_ConfigChannelAttributes(&handle_GPDMA1_Channel6, DMA_CHANNEL_NPRIV) != HAL_OK)
-    {
-      Error_Handler();
-    }
-
     /* GPDMA1_REQUEST_USART1_TX Init */
     handle_GPDMA1_Channel0.Instance = GPDMA1_Channel0;
     handle_GPDMA1_Channel0.Init.Request = GPDMA1_REQUEST_USART1_TX;
@@ -420,14 +325,10 @@ void HAL_UART_MspDeInit(UART_HandleTypeDef* huart)
 
     /**USART1 GPIO Configuration
     PB12     ------> USART1_TX
-    PA8     ------> USART1_RX
     */
     HAL_GPIO_DeInit(GPIOB, GPIO_PIN_12);
 
-    HAL_GPIO_DeInit(GPIOA, GPIO_PIN_8);
-
     /* USART1 DMA DeInit */
-    HAL_DMA_DeInit(huart->hdmarx);
     HAL_DMA_DeInit(huart->hdmatx);
 
     /* USART1 interrupt DeInit */
@@ -454,8 +355,8 @@ void HAL_PCD_MspInit(PCD_HandleTypeDef* hpcd)
 
     /* USER CODE END USB_OTG_HS_PCD_MspInit 0 */
 
-  /** Initializes the peripherals clock
-  */
+    /** Initializes the peripherals clock
+    */
     PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_USBOTGHSPHY;
     PeriphClkInit.UsbOtgHsPhyClockSelection = RCC_USBOTGHSPHYCLKSOURCE_HSE;
     if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK)
@@ -463,31 +364,35 @@ void HAL_PCD_MspInit(PCD_HandleTypeDef* hpcd)
       Error_Handler();
     }
 
-  /** Set the OTG PHY reference clock selection
-  */
+    /** Set the OTG PHY reference clock selection
+    */
     HAL_SYSCFG_SetOTGPHYReferenceClockSelection(SYSCFG_OTG_HS_PHY_CLK_SELECT_6);
 
     /* Enable VDDUSB */
     if(__HAL_RCC_PWR_IS_CLK_ENABLED())
     {
-      __HAL_RCC_PWR_CLK_ENABLE();
       HAL_PWREx_EnableVddUSB();
+      HAL_PWREx_EnableVdd11USB();
       HAL_PWREx_EnableUSBPWR();
-      //__HAL_RCC_PWR_CLK_DISABLE();
+      HAL_PWREx_EnableUSBBooster();
     }
     else
     {
+      __HAL_RCC_PWR_CLK_ENABLE();
       HAL_PWREx_EnableVddUSB();
+      HAL_PWREx_EnableVdd11USB();
+      HAL_PWREx_EnableUSBPWR();
+      HAL_PWREx_EnableUSBBooster();
+      __HAL_RCC_PWR_CLK_DISABLE();
     }
     HAL_SYSCFG_EnableOTGPHY(SYSCFG_OTG_HS_PHY_ENABLE);
     /* Peripheral clock enable */
     __HAL_RCC_USB_OTG_HS_CLK_ENABLE();
     __HAL_RCC_USB_OTG_HS_PHY_CLK_ENABLE();
-    /* USB_OTG_HS interrupt Init */
-    HAL_NVIC_SetPriority(USB_OTG_HS_IRQn, 3, 0);
-    HAL_NVIC_EnableIRQ(USB_OTG_HS_IRQn);
     /* USER CODE BEGIN USB_OTG_HS_PCD_MspInit 1 */
-
+    /* USB_OTG_HS interrupt Init */
+    HAL_NVIC_SetPriority(USB_OTG_HS_IRQn, 12, 0);
+    HAL_NVIC_EnableIRQ(USB_OTG_HS_IRQn);
     /* USER CODE END USB_OTG_HS_PCD_MspInit 1 */
 
   }
@@ -515,20 +420,25 @@ void HAL_PCD_MspDeInit(PCD_HandleTypeDef* hpcd)
     /* Disable VDDUSB */
     if(__HAL_RCC_PWR_IS_CLK_ENABLED())
     {
-      __HAL_RCC_PWR_CLK_ENABLE();
-      HAL_PWREx_DisableVddUSB();
+      HAL_PWREx_DisableUSBBooster();
+      HAL_PWREx_DisableUSBPWR();
+      HAL_PWREx_DisableVdd11USB();
     }
     else
     {
-      HAL_PWREx_DisableVddUSB();
+      __HAL_RCC_PWR_CLK_ENABLE();
+      HAL_PWREx_DisableUSBBooster();
+      HAL_PWREx_DisableUSBPWR();
+      HAL_PWREx_DisableVdd11USB();
+      __HAL_RCC_PWR_CLK_DISABLE();
     }
-
-    /* USB_OTG_HS interrupt DeInit */
-    HAL_NVIC_DisableIRQ(USB_OTG_HS_IRQn);
     /* USER CODE BEGIN USB_OTG_HS_PCD_MspDeInit 1 */
 
     /* USER CODE END USB_OTG_HS_PCD_MspDeInit 1 */
   }
 
 }
+
+/* USER CODE BEGIN 1 */
+
 /* USER CODE END 1 */

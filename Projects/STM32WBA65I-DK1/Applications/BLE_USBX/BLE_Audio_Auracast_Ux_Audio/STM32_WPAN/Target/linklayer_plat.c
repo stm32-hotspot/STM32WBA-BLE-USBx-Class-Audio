@@ -32,7 +32,6 @@
 #include "stm32_lpm.h"
 #include "stm32_lpm_if.h"
 #endif /* (CFG_LPM_LEVEL != 0) */
-
 /* USER CODE BEGIN Includes */
 #include "codec_if.h"
 #include "ll_sys_if.h"
@@ -43,9 +42,6 @@
 /* 2.4GHz RADIO ISR callbacks */
 void (*radio_callback)(void) = NULL;
 void (*low_isr_callback)(void) = NULL;
-
-/* RNG handle */
-extern RNG_HandleTypeDef hrng;
 
 /* Radio critical sections */
 static uint32_t primask_bit = 0;
@@ -451,7 +447,7 @@ void LINKLAYER_PLAT_DisableSpecificIRQ(uint8_t isr_type)
       local_basepri_value = __get_BASEPRI();
 
       /* Mask all other interrupts with lower priority that link layer SW low ISR */
-      __set_BASEPRI_MAX(RADIO_INTR_PRIO_LOW<<4);
+      __set_BASEPRI_MAX(RADIO_INTR_PRIO_LOW << 4 );
     }
   }
 }
@@ -529,9 +525,7 @@ void LINKLAYER_PLAT_StopRadioEvt(void)
 void LINKLAYER_PLAT_RCOStartClbr(void)
 {
 #if (CFG_LPM_LEVEL != 0)
-  PWR_DisableSleepMode();
-  /* Disabling stop mode prevents also from entering in standby */
-  UTIL_LPM_SetStopMode(1U << CFG_LPM_LL_HW_RCO_CLBR, UTIL_LPM_DISABLE);
+  UTIL_LPM_SetMaxMode(1U << CFG_LPM_LL_HW_RCO_CLBR, UTIL_LPM_IDLE_MODE);
 #endif /* (CFG_LPM_LEVEL != 0) */
 #if (CFG_SCM_SUPPORTED == 1)
   scm_setsystemclock(SCM_USER_LL_HW_RCO_CLBR, HSE_32MHZ);
@@ -547,12 +541,10 @@ void LINKLAYER_PLAT_RCOStartClbr(void)
 void LINKLAYER_PLAT_RCOStopClbr(void)
 {
 #if (CFG_LPM_LEVEL != 0)
-  PWR_EnableSleepMode();
-  UTIL_LPM_SetStopMode(1U << CFG_LPM_LL_HW_RCO_CLBR, UTIL_LPM_ENABLE);
+  UTIL_LPM_SetMaxMode(1U << CFG_LPM_LL_HW_RCO_CLBR, UTIL_LPM_MAX_MODE);
 #endif /* (CFG_LPM_LEVEL != 0) */
 #if (CFG_SCM_SUPPORTED == 1)
   scm_setsystemclock(SCM_USER_LL_HW_RCO_CLBR, HSE_16MHZ);
-  while (LL_PWR_IsActiveFlag_VOS() == 0);
 #endif /* (CFG_SCM_SUPPORTED == 1) */
 }
 
@@ -566,33 +558,35 @@ void LINKLAYER_PLAT_RequestTemperature(void)
 }
 
 /**
-  * @brief  Enable RTOS context switch.
+  * @brief  PHY Start calibration.
   * @param  None
   * @retval None
   */
-void LINKLAYER_PLAT_EnableOSContextSwitch(void)
+void LINKLAYER_PLAT_PhyStartClbr(void)
 {
-  /* USER CODE BEGIN LINKLAYER_PLAT_EnableOSContextSwitch_0 */
+  /* USER CODE BEGIN LINKLAYER_PLAT_PhyStartClbr_0 */
 
-  /* USER CODE END LINKLAYER_PLAT_EnableOSContextSwitch_0 */
-  /* USER CODE BEGIN LINKLAYER_PLAT_EnableOSContextSwitch_1 */
+  /* USER CODE END LINKLAYER_PLAT_PhyStartClbr_0 */
 
-  /* USER CODE END LINKLAYER_PLAT_EnableOSContextSwitch_1 */
+  /* USER CODE BEGIN LINKLAYER_PLAT_PhyStartClbr_1 */
+
+  /* USER CODE END LINKLAYER_PLAT_PhyStartClbr_1 */
 }
 
 /**
-  * @brief  Disable RTOS context switch.
+  * @brief  PHY Stop calibration.
   * @param  None
   * @retval None
   */
-void LINKLAYER_PLAT_DisableOSContextSwitch(void)
+void LINKLAYER_PLAT_PhyStopClbr(void)
 {
-  /* USER CODE BEGIN LINKLAYER_PLAT_DisableOSContextSwitch_0 */
+  /* USER CODE BEGIN LINKLAYER_PLAT_PhyStopClbr_0 */
 
-  /* USER CODE END LINKLAYER_PLAT_DisableOSContextSwitch_0 */
-  /* USER CODE BEGIN LINKLAYER_PLAT_DisableOSContextSwitch_1 */
+  /* USER CODE END LINKLAYER_PLAT_PhyStopClbr_0 */
 
-  /* USER CODE END LINKLAYER_PLAT_DisableOSContextSwitch_1 */
+  /* USER CODE BEGIN LINKLAYER_PLAT_PhyStopClbr_1 */
+
+  /* USER CODE END LINKLAYER_PLAT_PhyStopClbr_1 */
 }
 
 /**
@@ -603,12 +597,13 @@ void LINKLAYER_PLAT_DisableOSContextSwitch(void)
 void LINKLAYER_PLAT_SCHLDR_TIMING_UPDATE_NOT(Evnt_timing_t * p_evnt_timing)
 {
   /* USER CODE BEGIN LINKLAYER_PLAT_SCHLDR_TIMING_UPDATE_NOT_0 */
+  extern uint32_t gDefault_Exec_Time;
 #if defined(__GNUC__) && defined(DEBUG)
-  if ((p_evnt_timing->exec_time == (EXEC_TIME_DEFAULT + EXEC_TIME_EXTRA_GCC_DEBUG)) \
+  if ((p_evnt_timing->exec_time == gDefault_Exec_Time) \
       && (p_evnt_timing->schdling_time == SCHDL_TIME_DEFAULT) \
       && (p_evnt_timing->drift_time == (DRIFT_TIME_DEFAULT + DRIFT_TIME_EXTRA_GCC_DEBUG)))
 #else
-  if ((p_evnt_timing->exec_time == EXEC_TIME_DEFAULT) \
+  if ((p_evnt_timing->exec_time == gDefault_Exec_Time) \
       && (p_evnt_timing->schdling_time == SCHDL_TIME_DEFAULT) \
       && (p_evnt_timing->drift_time == DRIFT_TIME_DEFAULT))
 #endif /* defined(__GNUC__) && defined(DEBUG) */

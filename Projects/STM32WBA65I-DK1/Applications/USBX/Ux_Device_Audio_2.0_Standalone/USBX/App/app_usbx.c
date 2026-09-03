@@ -32,15 +32,14 @@
 #if defined ( __ICCARM__ )
 #pragma data_alignment=4
 #endif
-
 __ALIGN_BEGIN static UCHAR ux_byte_pool_buffer[USBX_APP_MEM_POOL_SIZE] __ALIGN_END;
 
 #if (CFG_LCD_SUPPORTED == 1)
-uint8_t usb_state = USB_STATE_DISCONNECTED;
-uint8_t usb_displayed_state = USB_STATE_DISCONNECTED;
-
 static void LCD_Init( void );
 static int32_t LCD_DrawBitmapArray(uint8_t xpos, uint8_t ypos, uint8_t xlen, uint8_t ylen, uint8_t *data);
+
+uint8_t gUsb_state = USB_STATE_DISCONNECTED;
+uint8_t gUsb_displayed_state = USB_STATE_DISCONNECTED;
 #endif /* (CFG_LCD_SUPPORTED == 1) */
 
 /**
@@ -70,8 +69,7 @@ UINT MX_USBX_Init(VOID)
     /* USER CODE END USBX_SYSTEM_INITIALIZE_ERROR */
   }
 
-  ret = MX_USBX_Device_Init();
-  if(ret != UX_SUCCESS)
+  if (MX_USBX_Device_Init() != UX_SUCCESS)
   {
   /* USER CODE BEGIN MX_USBX_Device_Init_Error */
     while(1)
@@ -90,11 +88,11 @@ UINT MX_USBX_Init(VOID)
   * @brief  _ux_utility_interrupt_disable
   *         USB utility interrupt disable.
   * @param  none
-  * @retval none
+  * @retval interrupt save
   */
 ALIGN_TYPE _ux_utility_interrupt_disable(VOID)
 {
-  UINT interrupt_save;
+  UINT interrupt_save = 0;
   /* USER CODE BEGIN _ux_utility_interrupt_disable */
   interrupt_save = __get_PRIMASK();
   __disable_irq();
@@ -242,7 +240,7 @@ static int32_t LCD_DrawBitmapArray(uint8_t xpos, uint8_t ypos, uint8_t xlen, uin
 void DrawStatusLCD(void)
 {
   uint8_t *usb_state_logo = 0;
-  uint8_t state = usb_state;
+  uint8_t state = gUsb_state;
   extern uint8_t ok_icon[];
   extern uint8_t nok_icon[];
   extern uint8_t speaker_icon[];
@@ -266,11 +264,11 @@ void DrawStatusLCD(void)
   }
 
   /* Only update if state has changed */
-  if ((usb_state_logo != 0) && (usb_displayed_state != state))
+  if ((usb_state_logo != 0) && (gUsb_displayed_state != state))
   {
     BSP_SPI3_Init();
     LCD_DrawBitmapArray(75 , 40, 16, 16, usb_state_logo);
-    usb_displayed_state = state;
+    gUsb_displayed_state = state;
     BSP_SPI3_DeInit();
   }
 }
@@ -282,7 +280,7 @@ void DrawStatusLCD(void)
   */
 void Set_USB_State(uint8_t state)
 {
-  usb_state = state;
+  gUsb_state = state;
 }
 #endif  /* CFG_LCD_SUPPORTED */
 

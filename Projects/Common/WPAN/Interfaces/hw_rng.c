@@ -21,6 +21,28 @@
 #include "stm32wbaxx_ll_rng.h"
 #include "RTDebug.h"
 
+/*****************************************************************************/
+
+extern void Error_Handler(void);
+
+/*****************************************************************************/
+
+#define RNG_TIMEOUT_VALUE     2U
+
+/*****************************************************************************/
+
+__WEAK int RNG_MutexTake(void)
+{
+  return 0; /* This shall be implemented by user */
+}
+
+__WEAK int RNG_MutexRelease(void)
+{
+  return 0; /* This shall be implemented by user */
+}
+
+/*****************************************************************************/
+
 __weak void RNG_KERNEL_CLK_ON(void)
 {
   /* NOTE : This function should not be modified, when the callback is needed,
@@ -44,7 +66,7 @@ __weak void RNG_KERNEL_CLK_OFF(void)
 
 typedef struct
 {
-  uint32_t pool[CFG_HW_RNG_POOL_SIZE];
+  uint32_t pool[HW_RNG_POOL_SIZE];
   uint8_t  size;
   uint8_t  run;
   uint8_t  clock_en;
@@ -54,6 +76,8 @@ typedef struct
 /*****************************************************************************/
 
 static HW_RNG_VAR_T HW_RNG_var;
+  
+static uint8_t hw_rng_pool_threshold = HW_RNG_POOL_DEFAULT_THRESHOLD;
 
 /*****************************************************************************/
 
@@ -136,12 +160,228 @@ void HW_RNG_DisableClock( uint8_t user_mask )
  */
 static void HW_RNG_WaitingClockSynchronization( void )
 {
+  /* RNG busy flag is not available in STM32WBA5xxx */
+#if defined(STM32WBA50xx) || defined(STM32WBA52xx) || defined(STM32WBA54xx) || defined(STM32WBA55xx) || defined(STM32WBA5Mxx)  
   volatile unsigned int cpt;
-
+  
   for(cpt = 178 ; cpt!=0 ; --cpt);
+#else
+  /* wait until RNG_SR_BUSY (bit 4) is cleared */
+  while(RNG->SR & (1 << 4));
+#endif /* defined(STM32WBA52xx) || defined(STM32WBA54xx) || defined(STM32WBA55xx) || defined(STM32WBA5Mxx) */  
 }
 
 /*****************************************************************************/
+/* HAL_RNGEx_RecoverSeedError() adaptation */
+#if defined(STM32WBA50xx) || defined(STM32WBA52xx) || defined(STM32WBA54xx) || defined(STM32WBA55xx) || defined(STM32WBA5Mxx)    
+static int HW_RNG_RecoverSeedError(void)
+{
+  volatile uint32_t count = 0U;
+
+  /* Check if seed error current status (SECS)is set */
+  if (READ_BIT(RNG->SR, RNG_FLAG_SECS) != (RNG_FLAG_SECS))
+  {
+    /* RNG performed the reset automatically (auto-reset) */
+    /* Clear bit SEIS */
+    LL_RNG_ClearFlag_SEIS(RNG);
+  }
+  else  /* Sequence to fully recover from a seed error */
+  {
+    /* Writing bit CONDRST=1 */
+    LL_RNG_EnableCondReset(RNG);
+    /* Writing bit CONDRST=0 */
+    LL_RNG_DisableCondReset(RNG);
+
+    /* Wait for conditioning reset process to be completed */
+    count = RNG_TIMEOUT_VALUE;
+    do
+    {
+      count-- ;
+      if (count == 0U)
+      {
+        return HW_RNG_NOISE_ERROR;
+      }
+    } while (READ_BIT(RNG->CR, RNG_CR_CONDRST) == (RNG_CR_CONDRST));
+
+    if (LL_RNG_IsActiveFlag_SEIS(RNG) != 0UL)
+    {
+      /* Clear bit SEIS */
+      LL_RNG_ClearFlag_SEIS(RNG);
+    }
+
+    /* Wait for SECS to be cleared */
+    count = RNG_TIMEOUT_VALUE;
+    do
+    {
+      count-- ;
+      if (count == 0U)
+      {
+        return HW_RNG_NOISE_ERROR;
+      }
+    } while (READ_BIT(RNG->SR, RNG_FLAG_SECS) == (RNG_FLAG_SECS));
+  }
+ 
+  return HW_OK;
+}
+
+#else /* defined(STM32WBA50xx) || defined(STM32WBA52xx) || defined(STM32WBA54xx) || defined(STM32WBA55xx) || defined(STM32WBA5Mxx) */
+
+static int HW_RNG_RecoverSeedError(void)
+{
+  uint32_t timeout;
+  uint32_t htsr_temp = 0U;
+  uint32_t htsr_previous_temp = 0U;
+  uint32_t htsr_count = 0U;
+  uint32_t nsmr_temp = 0U;
+  uint32_t tickstart1 = 0U;
+  uint32_t tickstart2 = 0U;
+  uint32_t tickstart3 = 0U;
+  uint32_t oscillators_count = 0U;
+  uint32_t config_b_fewer_than_6_osc_count = 0U;
+  uint8_t count = 0U;
+
+  /* timeout here is an empirical value */
+  timeout = (1UL + ((1UL << (READ_BIT(RNG->CR, RNG_CR_CLKDIV) >> 16UL)) * RNG_TIMEOUT_VALUE / 8UL));
+
+  tickstart1 = HAL_GetTick();
+
+  /* Check if seed error current status indicates no error and auto-reset succeeded */
+  if (LL_RNG_IsActiveFlag_SECS(RNG) == 0U)
+  {
+    /* Clear SEIS flag when automatic reset is activated */
+    LL_RNG_ClearFlag_SEIS(RNG);
+  }
+  else  /* Sequence to fully recover from a seed error */
+  {
+    do
+    {
+      if (LL_RNG_IsActiveFlag_SECS(RNG) == 0U)
+      {
+        break;
+      }
+      /* Read oscillator status registers combined */
+      htsr_temp = LL_RNG_GetHealthTestStatus(RNG, 0U);
+      htsr_temp |= LL_RNG_GetHealthTestStatus(RNG, 1U);
+      if (htsr_temp > 0U)
+      {
+        /* If any oscillator status bits overlap with previous status, increment counter */
+        if ((htsr_temp & htsr_previous_temp) != 0U)
+        {
+          htsr_count++;
+        }
+
+        if (htsr_count > 3U)
+        {
+          /* if the same repetitive or adaptative error is detected 3 times */
+          nsmr_temp = LL_RNG_GetNoiseSourceMask(RNG);
+
+          /* deactivate the same osc in each triple oscillator (Mask oscillators with the seed error by
+          clearing bits shifted right by 1) */       
+          nsmr_temp = nsmr_temp & ~(htsr_temp >> 1U);
+
+          /* Count the number of active oscillators in nsmr */
+          oscillators_count = 0U;
+          for (count = 0U; count < 9U; count++)
+          {
+            if (((nsmr_temp >> count) & 0x1U) != 0U)
+            {
+              /* increment count1 for each 1 in nsmr */
+              oscillators_count++;
+            }
+          }
+
+          if (oscillators_count < 6U)
+          {
+            /* If fewer than 6 oscillators remain active, unmask all oscillators --> Reset masking */
+            nsmr_temp = LL_RNG_GetOscNoiseSrc(RNG, LL_RNG_NOISE_SRC_1 | LL_RNG_NOISE_SRC_2 | LL_RNG_NOISE_SRC_3);
+            htsr_previous_temp = 0;
+            htsr_count = 0U;
+            if ((RNG->CR  & RNG_CR_CLKDIV_Msk) < ((uint32_t)RNG_CAND_NIST_CR_VALUE & RNG_CR_CLKDIV_Msk))
+            {
+              config_b_fewer_than_6_osc_count++;
+            }
+          }
+
+          if (config_b_fewer_than_6_osc_count > 2U)
+          {
+            /* Reset RNG condition */
+            WRITE_REG(RNG->CR, (RNG_CR_CONDRST_Msk | (uint32_t)RNG_CAND_NIST_CR_VALUE));
+
+            /* Update mask register with new oscillator mask */
+            LL_RNG_SetNoiseSourceMask(RNG, nsmr_temp);
+
+            /* Clear condition reset bit to resume operation */
+            LL_RNG_DisableCondReset(RNG);
+          }
+          else
+          {
+            /* Reset RNG condition */
+            WRITE_REG(RNG->CR, (RNG->CR & ~RNG_CR_RNGEN_Msk) | RNG_CR_CONDRST_Msk);
+
+            /* Update mask register with new oscillator mask */
+            LL_RNG_SetNoiseSourceMask(RNG, nsmr_temp);
+
+            /* Clear condition reset bit to resume operation */
+            LL_RNG_DisableCondReset(RNG);
+          }
+        }
+        else
+        {
+          /* Briefly toggle conditional reset to recover RNG */
+          WRITE_REG(RNG->CR, (RNG->CR & ~RNG_CR_RNGEN_Msk) | RNG_CR_CONDRST_Msk);
+
+          /* Unmask all oscillators to find another working condition */
+          LL_RNG_SetNoiseSourceMask(RNG, LL_RNG_GetOscNoiseSrc(RNG, LL_RNG_OSC_1 | LL_RNG_OSC_2 | LL_RNG_OSC_3));
+          LL_RNG_DisableCondReset(RNG);
+        }
+
+        /* Wait until RNG is not busy */
+        tickstart2 = HAL_GetTick();
+        do
+        {
+          if ((HAL_GetTick() - tickstart2) > RNG_TIMEOUT_VALUE)
+          {
+            /* New check to avoid false timeout detection in case of preemption */
+            return HW_RNG_NOISE_ERROR;
+          }
+        } while (READ_BIT(RNG->SR, RNG_SR_BUSY) == (RNG_SR_BUSY));
+
+        /* No timeout */
+        tickstart3 = HAL_GetTick();
+        do
+        {
+          if (LL_RNG_IsActiveFlag_DRDY(RNG) != 0UL)
+          {
+            break;
+          }
+          if ((HAL_GetTick() - tickstart3) > timeout)
+          {
+            /* New check to avoid false timeout detection in case of preemption */
+            if (LL_RNG_IsActiveFlag_DRDY(RNG) == 0UL)
+            {
+              if (LL_RNG_IsActiveFlag_SECS(RNG) == 0UL)
+              {
+                return HW_RNG_NOISE_ERROR;
+              }
+            }
+          }
+        } while (LL_RNG_IsActiveFlag_SECS(RNG) == 0UL);
+
+        /* Accumulate seed error status bits */
+        htsr_previous_temp = htsr_previous_temp | htsr_temp;
+      }
+    } while ((HAL_GetTick() - tickstart1) <= timeout);
+  }
+
+  /* Check if seed error current status (SECS)is set */
+  if (LL_RNG_IsActiveFlag_SECS(RNG) != 0U)
+  {
+    return HW_RNG_NOISE_ERROR;
+  }
+
+  return HW_OK;  
+}
+#endif /* defined(STM32WBA50xx) || defined(STM32WBA52xx) || defined(STM32WBA54xx) || defined(STM32WBA55xx) || defined(STM32WBA5Mxx) */
 
 /*
  * HW_RNG_Run: this function must be called in loop.
@@ -150,86 +390,53 @@ static void HW_RNG_WaitingClockSynchronization( void )
  * It always returns 0 in normal conditions. In error conditions, it returns
  * an error code different from 0.
  */
-static int HW_RNG_Run( HW_RNG_VAR_T* pv )
+static int HW_RNG_Run(HW_RNG_VAR_T* pv)
 {
-  int i, error = HW_OK;
+  int error = HW_OK;
 
-  /* If the RNG is OFF */
-
-  if ( !pv->run )
+  do 
   {
-    SYSTEM_DEBUG_SIGNAL_SET(RNG_ENABLE);
-
-    /* Enable RNG clocks */
-    HW_RNG_EnableClock( 1 );
-
-    /* Set RNG enable bit */
-    LL_RNG_Enable( RNG );
-
-    SYSTEM_DEBUG_SIGNAL_RESET(RNG_ENABLE);
-
-    /* Set flag indicating that RNG is ON */
-    pv->run = TRUE;
-  }
-
-  /* Else check for RNG clock error */
-
-  else if ( LL_RNG_IsActiveFlag_CECS( RNG ) )
-  {
-    /* Clear RNG clock error interrupt status flags */
-    LL_RNG_ClearFlag_CEIS( RNG );
-
-    error = HW_RNG_CLOCK_ERROR;
-  }
-
-  /* Else check for RNG seed error */
-
-  else if ( LL_RNG_IsActiveFlag_SEIS( RNG ) )
-  {
-    /* Clear RNG seed error interrupt status flags */
-    LL_RNG_ClearFlag_SEIS( RNG );
-
-    /* Discard 12 words from RNG_DR in order to clean the pipeline */
-    for ( i = 12; i > 0; i-- )
+    /* check for RNG clock error */
+    if (LL_RNG_IsActiveFlag_CECS(RNG))
     {
-      LL_RNG_ReadRandData32( RNG );
+      /* Clear RNG clock error interrupt status flags */
+      LL_RNG_ClearFlag_CEIS(RNG);
+      error = HW_RNG_CLOCK_ERROR;
+      break;
     }
 
-    error = HW_RNG_NOISE_ERROR;
-  }
-
-  /* Else if the pool is not full */
-
-  else if ( pv->size < CFG_HW_RNG_POOL_SIZE )
-  {
-    /* Read the H/W generated values until the pool is full */
-
-    UTILS_ENTER_CRITICAL_SECTION( );
-
+    /* check for RNG seed error */
+    if (LL_RNG_IsActiveFlag_SEIS(RNG))
+    {
+      error = HW_RNG_RecoverSeedError();
+      if (error != HW_OK)
+      {
+        break;
+      }
+    }
+    
+    /* if the pool is not full, read the H/W generated values until the pool is full */
+    UTILS_ENTER_CRITICAL_SECTION();
     SYSTEM_DEBUG_SIGNAL_SET(RNG_GEN_RAND_NUM);
 
-    while ( (pv->size < CFG_HW_RNG_POOL_SIZE) &&
-            LL_RNG_IsActiveFlag_DRDY( RNG ) )
+    while (pv->size < HW_RNG_POOL_SIZE)
     {
-      pv->pool[pv->size] = LL_RNG_ReadRandData32( RNG );
-      pv->size++;
+      if (LL_RNG_IsActiveFlag_DRDY(RNG))
+      {
+        pv->pool[pv->size] = LL_RNG_ReadRandData32(RNG);
+        pv->size++;
+      }
     }
 
     SYSTEM_DEBUG_SIGNAL_RESET(RNG_GEN_RAND_NUM);
     UTILS_EXIT_CRITICAL_SECTION( );
-  }
+  } while (0);
 
-  /* Else if the pool is full, disable the RNG */
-
-  else
-  {
-    /* Disable RNG peripheral and its RCC clock */
-    HW_RNG_Disable( );
-
-    /* Reset flag indicating that the RNG is ON */
-    pv->run = FALSE;
-  }
-
+  /* pool is full, disable the RNG and its RCC clock */
+  HW_RNG_Disable( );
+  /* Reset flag indicating that the RNG is ON */
+  pv->run = FALSE;
+  
   return error;
 }
 
@@ -245,12 +452,24 @@ void HW_RNG_Start( void )
   pv->error = HW_OK;
   pv->clock_en = 0;
 
+  HW_RNG_Init();
+  
+  if (0 != RNG_MutexTake())
+  {
+    Error_Handler();
+  }
+
   /* Fill the random numbers pool by calling the "run" function */
   do
   {
     pv->error = HW_RNG_Run( pv );
   }
   while ( pv->run && !pv->error );
+
+  if (0 != RNG_MutexRelease())
+  {
+    Error_Handler();
+  }
 }
 
 /*****************************************************************************/
@@ -267,7 +486,7 @@ void HW_RNG_Get( uint8_t n, uint32_t* val )
     if ( pv->size == 0 )
     {
       pv->error = HW_RNG_UFLOW_ERROR;
-      pool_value = ~pv->pool[n & (CFG_HW_RNG_POOL_SIZE - 1)];
+      pool_value = ~pv->pool[HW_RNG_POOL_SIZE - n];
     }
     else
     {
@@ -290,35 +509,93 @@ int HW_RNG_Process( void )
   HW_RNG_VAR_T* pv = &HW_RNG_var;
   int status = HW_OK;
 
-  /* Check if the process is not done or if the pool is not full */
-  if ( pv->run || (pv->size < CFG_HW_RNG_POOL_SIZE) )
+  if (0 != RNG_MutexTake())
   {
-    UTILS_ENTER_CRITICAL_SECTION( );
-
-    /* Check if an error occurred during a previous call to HW_RNG API */
-    status = pv->error;
-    pv->error = HW_OK;
-
-    UTILS_EXIT_CRITICAL_SECTION( );
-
-    if ( status == HW_OK )
+    status = HW_BUSY;
+  }  
+  else 
+  {
+    /* Check if the process is not done or if the pool is not full */
+    if (pv->size < hw_rng_pool_threshold)
     {
-      /* Call the "run" function that generates random data */
-      status = HW_RNG_Run( pv );
+      HW_RNG_Init();
+      UTILS_ENTER_CRITICAL_SECTION( );
 
-      /* If the process is not done, return "busy" status */
-      if ( (status == HW_OK) && pv->run )
+      /* Check if an error occurred during a previous call to HW_RNG API */
+      status = pv->error;
+      pv->error = HW_OK;
+
+      UTILS_EXIT_CRITICAL_SECTION( );
+
+      if ( status == HW_OK )
       {
-        status = HW_BUSY;
+        /* Call the "run" function that generates random data */
+        status = HW_RNG_Run( pv );
+
+        /* If the process is not done, return "busy" status */
+        if ( (status == HW_OK) && pv->run )
+        {
+          status = HW_BUSY;
+        }
       }
+    }
+    
+    if (0 != RNG_MutexRelease())
+    {
+      Error_Handler();
     }
   }
 
-  if(status != HW_OK)
+  if (status != HW_OK)
   {
     HWCB_RNG_Process( );
   }
 
   /* Return status */
   return status;
+}
+
+void HW_RNG_Init(void)
+{
+  HW_RNG_VAR_T* pv = &HW_RNG_var;
+
+  SYSTEM_DEBUG_SIGNAL_SET(RNG_ENABLE);
+
+  LL_RCC_SetRNGClockSource(LL_RCC_RNG_CLKSOURCE_HSI);
+  HW_RNG_EnableClock(1);
+  LL_RNG_Disable(RNG);
+  while(LL_RNG_IsEnabled(RNG));
+ 
+  /* Recommended value for NIST compliance, refer to application note AN4230 */
+  /* Using LL macros to set these values is not convenient as it's split 
+     in 3 parts and need some bit polling at each step to check completion.
+     So, for efficiency, register direct access */
+  WRITE_REG(RNG->CR, RNG_CR_NIST_VALUE | RNG_CR_CONDRST | RNG_CED_DISABLE);
+  /* Recommended value for NIST compliance, refer to application note AN4230 */
+ 
+  LL_RNG_DisableClkErrorDetect(RNG);
+  LL_RNG_DisableCondReset(RNG);
+
+#if !(defined(STM32WBA52xx) || defined(STM32WBA54xx) || defined(STM32WBA55xx) || defined(STM32WBA5Mxx)) 
+  while((RNG->SR & (1 << 4)));
+#endif 
+  
+  while(LL_RNG_IsEnabledCondReset(RNG));
+
+  LL_RNG_SetHealthConfig(RNG,RNG_HTCR_NIST_VALUE);
+
+  LL_RNG_Enable(RNG);
+  while(!LL_RNG_IsActiveFlag_DRDY(RNG)); /*wait for data to be ready*/
+
+  pv->run = TRUE;
+  SYSTEM_DEBUG_SIGNAL_RESET(RNG_ENABLE);
+}
+ 
+  
+void HW_RNG_SetPoolThreshold(uint8_t threshold)
+{
+  if(threshold < HW_RNG_POOL_SIZE)
+  {
+    hw_rng_pool_threshold = threshold;
+  }
 }

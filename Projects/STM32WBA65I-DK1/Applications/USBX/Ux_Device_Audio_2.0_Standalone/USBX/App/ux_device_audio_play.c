@@ -53,14 +53,14 @@ __attribute__((section(".AudioStreamBufferSection")))
 #endif
 /* Double BUFFER for Output Audio stream */
 __ALIGN_BEGIN AUDIO_OUT_BufferTypeDef  BufferCtl __ALIGN_END;
-uint8_t DMABuffer[SAI_AUDIO_BUF_SIZE];
+__ALIGN_BEGIN uint8_t DMABuffer[SAI_AUDIO_BUF_SIZE] __ALIGN_END;
 uint8_t FeedbackComputeDelay = 0;
+UX_DEVICE_CLASS_AUDIO_STREAM *pAudioPlayStream;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN PFP */
-static uint32_t GetBufferLevel();
-static void ComputeUSBFeedback(UX_DEVICE_CLASS_AUDIO_STREAM *audio_play_stream);
+static uint32_t GetBufferLevel(void);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -92,7 +92,6 @@ VOID USBD_AUDIO_PlaybackStreamChange(UX_DEVICE_CLASS_AUDIO_STREAM *audio_play_st
 #if (CFG_LCD_SUPPORTED == 1)
     Set_USB_State(USB_STATE_CONNECTED);
 #endif /* (CFG_LCD_SUPPORTED == 1) */
-    return;
   }
   else
   {
@@ -164,11 +163,14 @@ VOID USBD_AUDIO_PlaybackStreamFrameDone(UX_DEVICE_CLASS_AUDIO_STREAM *audio_play
     }
   }
 
+  /* Save audio stream pointer */
+  pAudioPlayStream = audio_play_stream;
+
   /* Re-free the first audio input frame for transfer.  */
   ux_device_class_audio_read_frame_free(audio_play_stream);
 
   /* Compute USB Drift */
-  ComputeUSBFeedback(audio_play_stream);
+  USBD_ComputeUSBFeedback();
 
   /* USER CODE END USBD_AUDIO_PlaybackStreamFrameDone */
 
@@ -213,6 +215,58 @@ ULONG USBD_AUDIO_PlaybackStreamGetMaxFrameBufferSize(VOID)
 }
 
 /* USER CODE BEGIN 1 */
+
+/**
+  * @brief Reset USB buffers and stop Audio DMA
+  * @param none
+  * @retval none
+  */
+void USBD_AUDIO_Stop(void)
+{
+  /* Reset buffer */
+  memset(&BufferCtl.buff[0], 0, USB_AUDIO_BUF_SIZE);
+
+  if (BufferCtl.rd_enable == 1)
+  {
+    uint8_t ret;
+    UNUSED(ret);
+    /* Stop DMA */
+    ret = BSP_AUDIO_OUT_Stop(0);
+    LOG_INFO_APP("BSP_AUDIO_OUT_Stop with status %d\n", ret);
+  }
+
+  /* Reset buffer */
+  BufferCtl.wr_ptr = 0;
+  BufferCtl.rd_ptr = 0;
+  BufferCtl.rd_enable = 0;
+}
+
+/**
+  * @brief Compute current USB feedback value and send it to USBX stack
+  * @retval None
+  */
+void USBD_ComputeUSBFeedback(void)
+{
+  /* Do not execute USB feedback computation at each frame */
+  FeedbackComputeDelay ++;
+
+  if (FeedbackComputeDelay == FEEDBACK_COMPUTE_DELAY_MAX)
+  {
+    FeedbackComputeDelay = 0;
+
+    /* Check offset of sample */
+    int32_t sampleOffset = ((int32_t) GetBufferLevel()) - ((int32_t) USB_AUDIO_BUF_SIZE / 2);
+    uint32_t frameDiv = (ux_device_class_audio_speed_get(pAudioPlayStream) == UX_HIGH_SPEED_DEVICE) ? 8000U : 1000U; /* 1000 for FULL_SPEED, 8000 for HIGH_SPEED */
+    sampleOffset /= 4; /* Divide per sample size to get number of samples */
+
+    int32_t curFrequency = 48000 - sampleOffset; /* Process actual frequency */
+    uint32_t feedback = (uint32_t)(((float)curFrequency / (float)frameDiv) * 65536.0f); /* Process feedback according to USB spec */
+
+    /* Send feedback to USBX stack */
+    ux_device_class_audio_feedback_set(pAudioPlayStream, (UCHAR*) &feedback);
+  }
+}
+
 /**
   * @brief Callback coming from Audio BSP to notify DMA has reached the half of the buffer
   * @param instance: Audio BSP instance ID
@@ -234,6 +288,7 @@ void BSP_AUDIO_OUT_HalfTransfer_CallBack(uint32_t instance)
     BufferCtl.rd_ptr = 0;
   }
 }
+
 
 /**
   * @brief Callback coming from Audio BSP to notify DMA has reached the end of the buffer
@@ -264,40 +319,15 @@ void BSP_AUDIO_OUT_TransferComplete_CallBack(uint32_t instance)
   */
 UINT USBD_AUDIO_Feedback_task_function(UX_DEVICE_CLASS_AUDIO_STREAM *stream)
 {
-  /* Run task only when read is enabled to avoid stuck USB packets */
   if (BufferCtl.rd_enable == 1)
   {
+    /* Run task only when read is enabled to avoid stuck USB packets */
     return _ux_device_class_audio_feedback_task_function(stream);
   }
   else
   {
     return UX_STATE_WAIT;
   }
-}
-
-/**
-  * @brief Reset USB buffers and stop Audio DMA
-  * @param none
-  * @retval none
-  */
-void USBD_AUDIO_Stop(void)
-{
-  /* Reset buffer */
-  memset(&BufferCtl.buff[0], 0, USB_AUDIO_BUF_SIZE);
-
-  if (BufferCtl.rd_enable == 1)
-  {
-    uint8_t ret;
-    UNUSED(ret);
-    /* Stop DMA */
-    ret = BSP_AUDIO_OUT_Stop(0);
-    LOG_INFO_APP("BSP_AUDIO_OUT_Stop with status %d\n", ret);
-  }
-
-  /* Reset buffer */
-  BufferCtl.wr_ptr = 0;
-  BufferCtl.rd_ptr = 0;
-  BufferCtl.rd_enable = 0;
 }
 
 /**
@@ -314,33 +344,6 @@ static uint32_t GetBufferLevel(void)
   else
   {
     return USB_AUDIO_BUF_SIZE - BufferCtl.rd_ptr + BufferCtl.wr_ptr;
-  }
-}
-
-/**
-  * @brief Compute current USB feedback value and send it to USBX stack
-  * @param audio_play_stream: pointer to the USBX Class Audio Stream
-  * @retval None
-  */
-static void ComputeUSBFeedback(UX_DEVICE_CLASS_AUDIO_STREAM *audio_play_stream)
-{
-  /* Do not execute USB feedback computation at each frame */
-  FeedbackComputeDelay ++;
-
-  if (FeedbackComputeDelay == FEEDBACK_COMPUTE_DELAY_MAX)
-  {
-    FeedbackComputeDelay = 0;
-
-    /* Check offset of sample */
-    int32_t sampleOffset = ((int32_t) GetBufferLevel()) - ((int32_t) USB_AUDIO_BUF_SIZE / 2);
-    uint32_t frameDiv = (ux_device_class_audio_speed_get(audio_play_stream) == UX_HIGH_SPEED_DEVICE) ? 8000U : 1000U; /* 1000 for FULL_SPEED, 8000 for HIGH_SPEED */
-    sampleOffset /= 4; /* Divide per sample size to get number of samples */
-
-    int32_t curFrequency = 48000 - sampleOffset; /* Process actual frequency */
-    uint32_t feedback = (uint32_t)(((float)curFrequency / (float)frameDiv) * 65536.0f); /* Process feedback according to USB spec */
-
-    /* Send feedback to USBX stack */
-    ux_device_class_audio_feedback_set(audio_play_stream, (UCHAR*) &feedback);
   }
 }
 /* USER CODE END 1 */

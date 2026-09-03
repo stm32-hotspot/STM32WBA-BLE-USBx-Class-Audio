@@ -7,7 +7,7 @@
   ******************************************************************************
   * @attention
   *
-  * Copyright (c) 2022 STMicroelectronics.
+  * Copyright (c) 2024 STMicroelectronics.
   * All rights reserved.
   *
   * This software is licensed under terms that can be found in the LICENSE file
@@ -32,6 +32,7 @@ extern "C" {
 #include "app_common.h"
 /* USER CODE BEGIN Includes */
 #include "pbp_app.h"
+
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/
@@ -56,6 +57,24 @@ typedef enum {
 #define AURACAST_STATE_OFF        0
 #define AURACAST_STATE_CONFIGURED 1
 #define AURACAST_STATE_STREAMING  2
+
+/******************************************************************************
+ * Information Table
+ *
+ * Version
+ * [0:3]   = Build - 0: Untracked - 15:Released - x: Tracked version
+ * [4:7]   = branch - 0: Mass Market - x: ...
+ * [8:15]  = Subversion
+ * [16:23] = Version minor
+ * [24:31] = Version major
+ *
+ ******************************************************************************/
+#define WPAN_FW_BUILD              (0)
+#define WPAN_FW_BRANCH             (0)
+#define WPAN_FW_SUBVERSION         (0)
+#define WPAN_FW_MINOR_VERSION      (10)
+#define WPAN_FW_MAJOR_VERSION      (1)
+
 /* USER CODE END EC */
 
 /* Exported variables --------------------------------------------------------*/
@@ -82,12 +101,10 @@ void MX_AudioInit(Audio_Role_t role,
                   uint8_t *pSrcBuff,
                   AudioDriverConfig driver_config);
 void MX_AudioDeInit(void);
-int32_t Start_TxAudio(void);
-void Stop_TxAudio(void);
-int32_t Start_RxAudio(void);
-void Stop_RxAudio(void);
 void AudioClock_Init(uint32_t frequency);
 void PLL_Exit(void);
+int32_t Start_RxAudio(void);
+void Stop_RxAudio(void);
 void APP_NotifyFrameCplt(void);
 
 #if (CFG_LCD_SUPPORTED == 1)

@@ -33,6 +33,7 @@ extern "C" {
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "app_conf.h"
+#include "stm32wba65i_discovery_audio.h"
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/
@@ -41,9 +42,8 @@ extern "C" {
 /* USER CODE END ET */
 
 /* Exported constants --------------------------------------------------------*/
-#define USBX_APP_MEM_POOL_SIZE       60 * 1024
-#define USBX_MEMORY_STACK_SIZE       53 * 1024
-
+#define USBX_APP_MEM_POOL_SIZE       20480
+#define USBX_MEMORY_STACK_SIZE       20480
 /* USER CODE BEGIN EC */
 #define USB_STATE_DISCONNECTED 0
 #define USB_STATE_CONNECTED    1

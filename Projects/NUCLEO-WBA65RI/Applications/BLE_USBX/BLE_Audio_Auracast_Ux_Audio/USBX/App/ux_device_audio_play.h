@@ -83,7 +83,6 @@ UINT USBD_AUDIO_Feedback_task_function(UX_DEVICE_CLASS_AUDIO_STREAM *stream);
 
 /* Private defines -----------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define USB_AUDIO_BUF_SIZE   48*50*2*2 /* 50ms 48KHz buffer */
 
 #define FEEDBACK_COMPUTE_DELAY_MAX 5
 

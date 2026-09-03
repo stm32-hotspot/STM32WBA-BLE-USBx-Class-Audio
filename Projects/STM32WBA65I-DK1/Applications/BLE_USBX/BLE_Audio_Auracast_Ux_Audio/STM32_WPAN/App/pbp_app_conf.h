@@ -1,4 +1,3 @@
-/* USER CODE BEGIN Header */
 /**
   ******************************************************************************
   * @file    pbp_app_conf.h
@@ -16,7 +15,6 @@
   *
   ******************************************************************************
   */
-/* USER CODE END Header */
 
 /* Define to prevent recursive inclusion -------------------------------------*/
 #ifndef __PBP_APP_CONF_H
@@ -27,18 +25,18 @@ extern "C" {
 #endif
 
 /* Includes ------------------------------------------------------------------*/
-
 /* Private includes ----------------------------------------------------------*/
 
 /* Exported constants --------------------------------------------------------*/
 /*Audio Profiles Roles configuration*/
+#define APP_CAP_ROLE                                    (CAP_ROLE_INITIATOR)
+
 #define APP_BAP_ROLE_UNICAST_SERVER_SUPPORT             (0u)
 #define APP_BAP_ROLE_UNICAST_CLIENT_SUPPORT             (0u)
 #define APP_BAP_ROLE_BROADCAST_SOURCE_SUPPORT           (1u)
 #define APP_BAP_ROLE_BROADCAST_SINK_SUPPORT             (0u)
 #define APP_BAP_ROLE_SCAN_DELEGATOR_SUPPORT             (0u)
 #define APP_BAP_ROLE_BROADCAST_ASSISTANT_SUPPORT        (0u)
-
 
 #define APP_CCP_ROLE_SERVER_SUPPORT                     (0u)
 #define APP_CCP_ROLE_CLIENT_SUPPORT                     (0u)
@@ -63,10 +61,18 @@ extern "C" {
 #define MAX_NUM_CIG                                     (0u)    /* Maximum number of CIGes */
 #define MAX_NUM_CIS_PER_CIG                             (0u)    /* Maximum number of CISes per CIG */
 #define MAX_NUM_BIG                                     (1u)    /* Maximum number of BIGes */
+#ifdef DEMO_STEREO
 #define MAX_NUM_BIS_PER_BIG                             (2u)    /* Maximum number of BISes per BIG */
 #define PBP_MAX_BIS                                     (2u)
-#define MAX_METADATA_LEN                                (50u)
-
+#define PBP_MAX_SUBGROUPS                               (1u)
+#else /* DEMO_4_LANGUAGES */
+#define MAX_NUM_BIS_PER_BIG                             (4u)    /* Maximum number of BISes per BIG */
+#define PBP_MAX_BIS                                     (4u)
+#define PBP_MAX_SUBGROUPS                               (4u)
+#endif
+#define MAX_METADATA_LEN                                (9u)
+#define MAX_BIS_CODEC_SPECIFIC_CONFIG_LEN               (6u)
+#define MAX_SUBGROUP_CODEC_SPECIFIC_CONFIG_LEN          (13u)
 
 /* These delays refers to the time at which the audio signal passes through an
  * audio interface (such an electroacoustic transducer ) to or from
@@ -81,10 +87,7 @@ extern "C" {
                                                                                  */
 #define APP_DELAY_SRC_MAX                       (APP_DELAY_SRC_MIN + 0u)        /* No extra buffering of audio data*/
 
-
-
 /* Exported types ------------------------------------------------------------*/
-
 
 /* External variables --------------------------------------------------------*/
 

@@ -128,17 +128,7 @@ VOID USBD_AUDIO_PlaybackStreamFrameDone(UX_DEVICE_CLASS_AUDIO_STREAM *audio_play
   {
     if (BufferCtl.rd_enable == 0)
     {
-      /* Start TIM17 timer to start sending packets to codec */
-
-      /* Clear the update flag */
-      LL_TIM_ClearFlag_UPDATE(TIM17);
-
-      /* Enable the update interrupt */
-      LL_TIM_EnableIT_UPDATE(TIM17);
-
-      /* Enable counter */
-      LL_TIM_EnableCounter(TIM17);
-
+      NVIC_EnableIRQ(TIM17_IRQn);
       BufferCtl.rd_enable = 1;
     }
 
@@ -216,9 +206,8 @@ ULONG USBD_AUDIO_PlaybackStreamGetMaxFrameBufferSize(VOID)
   */
 void USBD_AUDIO_Stop(void)
 {
-  /* Stop and reset timer */
-  LL_TIM_DisableCounter(TIM17);
-  LL_TIM_SetCounter(TIM17, 30720);
+  /* Stop sending data to codec manager */
+  NVIC_DisableIRQ(TIM17_IRQn);
 
   /* Reset buffer */
   BufferCtl.wr_ptr = 0;
@@ -245,7 +234,8 @@ void USBD_ComputeUSBFeedback(void)
     uint32_t frameDiv = (ux_device_class_audio_speed_get(pAudioPlayStream) == UX_HIGH_SPEED_DEVICE) ? 8000U : 1000U; /* 1000 for FULL_SPEED, 8000 for HIGH_SPEED */
     sampleOffset /= 4; /* Divide per sample size to get number of samples */
 
-    int32_t curFrequency = 48000 - sampleOffset; /* Process actual frequency */
+    int32_t curFrequency = APP_AUDIO_FREQUENCY - sampleOffset; /* Process actual frequency */
+
     uint32_t feedback = (uint32_t)(((float)curFrequency / (float)frameDiv) * 65536.0f); /* Process feedback according to USB spec */
 
     /* Send feedback to USBX stack */

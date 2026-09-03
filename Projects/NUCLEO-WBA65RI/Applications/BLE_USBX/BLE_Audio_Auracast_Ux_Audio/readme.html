@@ -21,15 +21,15 @@
 <div class="col-sm-12 col-lg-8">
 <h1 id="ble_audio_auracast_ux_audio">BLE_Audio_Auracast_Ux_Audio</h1>
 <p>The objective of this project is to provide examples of the implementation of the USB Class Audio using the Azure RTOS USBX stack on the STM32WBA6 MCU.</p>
-<p>The BLE_Audio_Auracast_Ux_Audio application streams audio from USB to Auracast stream. <br></p>
+<p>The BLE_Audio_Auracast_Ux_Audio application streams stereo audio from USB to Auracast stream. <br></p>
 <h3 id="keywords"><strong>Keywords</strong></h3>
 <p>Connectivity, BLE, BLE protocol, BLE Audio, Bare Metal, Auracast, USB, USB Class Audio</p>
 <h3 id="hardware-and-software-environment"><strong>Hardware and Software environment</strong></h3>
 <p>This example runs on <strong>NUCLEO-WBA65RI</strong> boards.</p>
 <p>To build the projects, you need one of the following IDE:</p>
 <ul>
-<li>IAR Embedded Workbench for ARM (EWARM) 9.20.1</li>
-<li>STM32CubeIDE 1.18.1</li>
+<li>IAR Embedded Workbench for ARM (EWARM) 9.60.3</li>
+<li>STM32CubeIDE 2.2.0</li>
 </ul>
 <blockquote>
 <p>WARNING: Using STM32CubeIDE in <strong>Debug</strong> configuration can cause audio glitches due to GCC optimization for this debug. Consider using the <strong>Release</strong> configuration when not debugging, or use IAR.</p>
@@ -38,7 +38,7 @@
 <p>The following materials are needed to replicate the demo:</p>
 <ul>
 <li>A <strong>NUCLEO-WBA65RI</strong> running this project</li>
-<li>An <strong>STM32WBA55-DK1</strong> or an <strong>STM32WBA65I-DK1</strong> running the BLE_Audio_PBP_Sink project available in the <a href="https://www.st.com/en/embedded-software/stm32cubewba.html">STM32CubeWBA firmware package 1.6.1</a></li>
+<li>An <strong>STM32WBA55-DK1</strong> or an <strong>STM32WBA65I-DK1</strong> running the BLE_Audio_PBP_Sink project available in the <a href="https://www.st.com/en/embedded-software/stm32cubewba.html">STM32CubeWBA firmware package</a></li>
 <li>A USB Class Audio host: any PC or smartphone</li>
 <li>A USB cable to connect the Discovery Kit to the USB host (usually a USB-A to USB-C cable for PC and USB-C to USB-C for smartphone)</li>
 <li>Headphones with a 3.5mm jack input</li>
@@ -51,6 +51,12 @@
 <div data-align="left">
 <p><img src="../../../../../Utilities/Media/Setup_Jumper_USB.png" alt="Set Jumper on 5V_USB_MCU" width="500" height="auto"/></p>
 </div>
+<h3 id="demo-variant"><strong>Demo Variant</strong></h3>
+<p>The define <code>DEMO_STEREO</code> can be removed at application level and replaced by <code>DEMO_4_LANGUAGES</code>.<br>
+For this variant, the USB host recognizes the device as a 4 channel audio peripheral, each channel is mapped to a dedicated BIS contained in a dedicated subgroup.<br>
+Thus, a multi language file can be streamed.<br>
+The sink must be adapted to support 4 subgroups and synchronize the expected one. Note the broadcast name is has been changed to <i>STM32Language_1</i>.</p>
+<p>Note that the device may need to be manually uninstalled from the device manager to clear cached configuration.</p>
 <h3 id="documentation"><strong>Documentation</strong></h3>
 <ul>
 <li>Wiki pages related to the LE Audio solutions developped by STMicroelectronics are available here:

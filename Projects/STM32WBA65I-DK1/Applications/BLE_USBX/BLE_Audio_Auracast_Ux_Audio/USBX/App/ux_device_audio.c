@@ -23,7 +23,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "main.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -60,7 +60,6 @@ UX_DEVICE_CLASS_AUDIO20_CONTROL         audio_control[USBD_AUDIO_STREAM_NMNBER];
 /* USER CODE BEGIN 0 */
 
 /* USER CODE END 0 */
-
 /**
   * @brief  USBD_AUDIO_Activate
   *         This function is called when insertion of a Audio device.
@@ -139,7 +138,7 @@ VOID USBD_AUDIO_SetControlValues(VOID)
   /* USER CODE BEGIN USBD_AUDIO_SetControlValues */
   /* Initialize audio 2.0 control values.  */
   audio_control[0].ux_device_class_audio20_control_cs_id                = USBD_AUDIO_PLAY_CLOCK_SOURCE_ID;
-  audio_control[0].ux_device_class_audio20_control_sampling_frequency   = USBD_AUDIO_FREQ_48_K;
+  audio_control[0].ux_device_class_audio20_control_sampling_frequency   = APP_AUDIO_FREQUENCY;
   audio_control[0].ux_device_class_audio20_control_fu_id                = USBD_AUDIO_PLAY_FEATURE_UNIT_ID;
   audio_control[0].ux_device_class_audio20_control_mute[0]              = 0;
   audio_control[0].ux_device_class_audio20_control_volume_min[0]        = VOLUME_SPEAKER_MIN;

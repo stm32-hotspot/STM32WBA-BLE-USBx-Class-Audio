@@ -29,13 +29,34 @@
 </center>
 <h1 id="purpose">Purpose</h1>
 <p>This package contains two applications, <strong>Ux_Device_Audio_2.0_Standalone</strong> and <strong>BLE_Audio_Auracast_Ux_Audio</strong>, which implement the USB Class Audio device role with the USBX stack on STM32WBA6. See README.md file for more details.</p>
-<p>These examples are based on the <a href="https://github.com/STMicroelectronics/STM32CubeWBA/releases/tag/v1.6.1">STM32CubeWBA_v1.6.1</a> package. For further information about these components, see official package. </p>
+<p>These examples are based on the <a href="https://github.com/STMicroelectronics/STM32CubeWBA/releases/tag/v1.10.0">STM32CubeWBA_v1.10.0</a> package. For further information about these components, see official package. </p>
 <p><strong>Ux_Device_Audio_2.0_Standalone and BLE_Audio_Auracast_Ux_Audio examples are being delivered as-is, not necessarily supported by ST.</strong></p>
 </div>
 <div class="col-sm-12 col-lg-8">
 <h1 id="update-history">Update History</h1>
 <div class="collapse">
-<input type="checkbox" id="collapse-section1" checked aria-hidden="true"> <label for="collapse-section1" aria-hidden="true">V1.0.0 / 16-June-2025</label>
+<input type="checkbox" id="collapse-section1" checked aria-hidden="true"> <label for="collapse-section1" aria-hidden="true">V1.1.0 / 03-September-2026</label>
+<div>
+<h2 id="main-changes">Main Changes</h2>
+<h3 id="main-changes_content">Adaptation to STM32CubeWBA_v1.10.0. Add <strong>USBD_HAL_ISOINCOMPLETE_CALLBACK</strong> in projects defines to support USBX update. Add <strong>DEMO_STEREO</strong> in Auracast project for default configuration. Add support of <strong>DEMO_4_LANGUAGES</strong> for 4 languages streaming (4BIS).</h3>
+<h2 id="components">Components</h2>
+<h3 id="components_content">Refer to Release Notes of offical STM32CubeWBA v1.10.0 package for details of Components (Drivers, Cortex-M CMSIS, STM32 CMSIS, STMWBAxx_HAL_Driver, STM32WBAxx_Nucleo, Middlewares, Utilities)</h3>
+<h2 id="known-limitations">Known Limitations</h2>
+<h3 id="known-limitations_content">Compatibility is limited with some smartphones, refer to README.md section Clock Synchronization for more details</h3>
+<h2 id="toolchains-and-compilers">Development Toolchains and Compilers</h2>
+<h3 id="toolchains-and-compilers_content">IAR Embedded Workbench for ARM (EWARM) toolchain from v9.60.3 + ST-Link</h3>
+<h3 id="toolchains-and-compilers_content">STM32Cube IDE 2.2.0 + ST-Link</h3>
+<h2 id="supported-devices-and-boards">Supported Devices and Boards</h2>
+<ul>
+<li><h3>STM32WBA65I-DK1 board</h3></li>
+<li><h3>NUCLEO-WBA65RI board</h3></li>
+</ul>
+<h2 id="dependencies">Dependencies</h2>
+<h3 id="dependencies_content">None</h3>
+</div>
+</div>
+<div class="collapse">
+<input type="checkbox" id="collapse-section2" checked aria-hidden="true"> <label for="collapse-section2" aria-hidden="true">V1.0.0 / 16-June-2025</label>
 <div>
 <h2 id="main-changes">Main Changes</h2>
 <h3 id="main-changes_content">Initial release of <strong>Ux_Device_Audio_2.0_Standalone</strong> on STM32WBA65I-DK1 and <strong>BLE_Audio_Auracast_Ux_Audio</strong> on STM32WBA65I-DK1 and NUCLEO-WBA65RI</h3>

@@ -50,7 +50,7 @@ extern "C" {
   * @{
   */
 
-/** @defgroup STM32WBA65I_DK1_COMMON_Exported_Types STM32WBA65I-DK1 COMMON Exported Types
+/** @defgroup STM32WBA65I_DK1_COMMON_Exported_Types COMMON Exported Types
   * @{
   */
 typedef enum
@@ -155,7 +155,7 @@ typedef struct
   * @}
   */
 
-/** @defgroup STM32WBA65I_DK1_COMMON_Exported_Constants STM32WBA65I-DK1 COMMON Exported Constants
+/** @defgroup STM32WBA65I_DK1_COMMON_Exported_Constants COMMON Exported Constants
   * @{
   */
 /**
@@ -170,7 +170,7 @@ typedef struct
   */
 #define STM32WBA65I_DK1_BSP_VERSION_MAIN   (0x01U) /*!< [31:24] main version */
 #define STM32WBA65I_DK1_BSP_VERSION_SUB1   (0x00U) /*!< [23:16] sub1 version */
-#define STM32WBA65I_DK1_BSP_VERSION_SUB2   (0x00U) /*!< [15:8]  sub2 version */
+#define STM32WBA65I_DK1_BSP_VERSION_SUB2   (0x01U) /*!< [15:8]  sub2 version */
 #define STM32WBA65I_DK1_BSP_VERSION_RC     (0x00U) /*!< [7:0]  release candidate */
 #define STM32WBA65I_DK1_BSP_VERSION        ((STM32WBA65I_DK1_BSP_VERSION_MAIN << 24)\
                                             |(STM32WBA65I_DK1_BSP_VERSION_SUB1 << 16)\
@@ -180,7 +180,7 @@ typedef struct
 #define STM32WBA65I_DK1_BSP_BOARD_NAME  "STM32WBA65I-DK1";
 #define STM32WBA65I_DK1_BSP_BOARD_ID    "MB2143";
 
-/** @defgroup STM32WBA65I_DK1_COMMON_LED STM32WBA65I-DK1 COMMON LED
+/** @defgroup STM32WBA65I_DK1_COMMON_LED COMMON LED
   * @{
   */
 #define LEDn                                   2U
@@ -196,7 +196,7 @@ typedef struct
   */
 
 #if (USE_BSP_COM_FEATURE == 1)
-/** @defgroup STM32WBA65I_DK1_COMMON_COM STM32WBA65I-DK1 COMMON COM
+/** @defgroup STM32WBA65I_DK1_COMMON_COM COMMON COM
   * @{
   */
 #define COMn                                    1U
@@ -218,7 +218,7 @@ typedef struct
 #endif /* (USE_BSP_COM_FEATURE == 1) */
 
 
-/** @defgroup STM32WBA65I_DK1_COMMON_JOY STM32WBA65I-DK1 COMMON JOYSTICK
+/** @defgroup STM32WBA65I_DK1_COMMON_JOY COMMON JOYSTICK
   * @{
   */
 #define JOYn                                    1U

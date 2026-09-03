@@ -24,14 +24,11 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-
 /* Includes ------------------------------------------------------------------*/
 #include "ux_api.h"
 #include "ux_stm32_config.h"
 #include "ux_device_class_audio.h"
-
 #include "ux_device_class_audio20.h"
-
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
@@ -44,13 +41,11 @@ extern "C" {
 #define USBD_MAX_CLASS_INTERFACES                      12U
 
 #define USBD_AUDIO_CLASS_ACTIVATED                     1U
-
 #define USBD_AUDIO_PLAYBACK_ACTIVATED                  1U
 
 #define USBD_AUDIO_PLAYBACK_MULTI_FREQUENCIES          0U
-#define USBD_AUDIO_RECORDING_MULTI_FREQUENCIES         0U
 
-#define USBD_CONFIG_MAXPOWER                           13U
+#define USBD_CONFIG_MAXPOWER                           25U
 #define USBD_COMPOSITE_USE_IAD                         1U
 #define USBD_DEVICE_FRAMEWORK_BUILDER_ENABLED          1U
 
@@ -59,7 +54,6 @@ extern "C" {
 /* USER CODE BEGIN ET */
 
 /* USER CODE END ET */
-
 /* Enum Class Type */
 typedef enum
 {
@@ -69,13 +63,13 @@ typedef enum
   CLASS_TYPE_MSC      = 3,
   CLASS_TYPE_CDC_ECM  = 4,
   CLASS_TYPE_DFU      = 5,
-  CLASS_TYPE_VIDEO    = 6,
-  CLASS_TYPE_PIMA_MTP = 7,
-  CLASS_TYPE_CCID     = 8,
-  CLASS_TYPE_PRINTER  = 9,
-  CLASS_TYPE_RNDIS    = 10,
+  CLASS_TYPE_PIMA_MTP = 6,
+  CLASS_TYPE_RNDIS    = 7,
+  CLASS_TYPE_VIDEO    = 8,
+  CLASS_TYPE_CCID     = 9,
+  CLASS_TYPE_PRINTER  = 10,
   CLASS_TYPE_AUDIO_10 = 11,
-  CLASS_TYPE_AUDIO_20 = 12,
+  CLASS_TYPE_AUDIO_20 = 12
 } USBD_CompositeClassTypeDef;
 
 /* USB Endpoint handle structure */
@@ -340,12 +334,12 @@ uint16_t USBD_Get_Configuration_Number(uint8_t class_type, uint8_t interface_typ
 
 /* USER CODE END Private_defines */
 
-#define USBD_VID                                      0x0483
-#define USBD_PID                                      0x5730
+#define USBD_VID                                      1155
+#define USBD_PID                                      22288
 #define USBD_LANGID_STRING                            1033
 #define USBD_MANUFACTURER_STRING                      "STMicroelectronics"
 #define USBD_PRODUCT_STRING                           "STM32 AUDIO20 STREAMING"
-#define USBD_SERIAL_NUMBER                            "AUDIO001"
+#define USBD_SERIAL_NUMBER                            "000000000001"
 
 #define USB_DESC_TYPE_INTERFACE                       0x04U
 #define USB_DESC_TYPE_ENDPOINT                        0x05U
@@ -362,7 +356,6 @@ uint16_t USBD_Get_Configuration_Number(uint8_t class_type, uint8_t interface_typ
 #define USBD_EP_ATTR_ISOC_ADAPT                       0x08U
 #define USBD_EP_ATTR_ISOC_SYNC                        0x0CU
 #define USBD_EP_ATTR_ISOC_FEEDBACK                    0x10U
-
 #define USBD_FULL_SPEED                               0x00U
 #define USBD_HIGH_SPEED                               0x01U
 
@@ -411,11 +404,13 @@ uint16_t USBD_Get_Configuration_Number(uint8_t class_type, uint8_t interface_typ
 #define USBD_AUDIO_PLAY_EPOUT_FS_BINTERVAL            1U
 #define USBD_AUDIO_PLAY_EPOUT_HS_BINTERVAL            1U
 
-#define USBD_AUDIO_FEEDBACK_EPIN_ADDR                 0x81U
-#define USBD_AUDIO_FEEDBACK_EPIN_FS_MPS               4U
-#define USBD_AUDIO_FEEDBACK_EPIN_HS_MPS               4U
-#define USBD_AUDIO_FEEDBACK_EPIN_FS_BINTERVAL         1U
-#define USBD_AUDIO_FEEDBACK_EPIN_HS_BINTERVAL         1U
+#ifdef UX_DEVICE_CLASS_AUDIO_FEEDBACK_SUPPORT
+#define USBD_AUDIO_PLAY_EP_FEEDBACK_ADDR              0x81U
+#define USBD_AUDIO_PLAY_EP_FEEDBACK_FS_MPS            4U
+#define USBD_AUDIO_PLAY_EP_FEEDBACK_HS_MPS            4U
+#define USBD_AUDIO_PLAY_EP_FEEDBACK_FS_BINTERVAL      1U
+#define USBD_AUDIO_PLAY_EP_FEEDBACK_HS_BINTERVAL      1U
+#endif /* UX_DEVICE_CLASS_AUDIO_FEEDBACK_SUPPORT */
 
 #define USBD_AUDIO_CONTROL_INTERFACE_SIZE             sizeof(USBD_AUDIOCCSIfDescTypeDef)+          \
                                                       sizeof(USBD_AUDIOInputTerminalDescTypeDef)+  \

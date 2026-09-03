@@ -29,17 +29,42 @@
 #include <stdint.h>
 #include "m95p32.h"
 #include "stm32wba65i_discovery_conf.h"
+/** @addtogroup BSP
+  * @{
+  */
 
-/* Exported macro ------------------------------------------------------------*/
+/** @addtogroup STM32WBA65I_DK1
+  * @{
+  */
+
+/** @addtogroup STM32WBA65I_DK1_EEPROM
+  * @{
+  */
+
+/** @defgroup STM32WBA65I_DK1_EEPROM_Exported_Constants EEPROM Exported Constants
+  * @{
+  */
 #define BSP_EEPROM_INSTANCES_NBR                   2U
 #define BSP_EEPROM_0                               0U
 
 #define EEPROM_PAGESIZE                            4U
 #define EEPROMEX_SLAVE_CS_PIN                      GPIO_PIN_0
 #define EEPROMEX_SLAVE_CS_PIN_PORT                 GPIOC
+/**
+  * @}
+  */
 
+/** @defgroup STM32WBA65I_DK1_EEPROM_Exported_Macros EEPROM Exported Macros
+  * @{
+  */
 #define EEPROMEX_SPI_SLAVE_FOUR_GPIO_CLK_ENABLE()  __HAL_RCC_GPIOC_CLK_ENABLE()
+/**
+  * @}
+  */
 
+/** @addtogroup STM32WBA65I_DK1_EEPROM_Exported_Functions
+  * @{
+  */
    void EEPROMEX_CTRL_HIGH(void);
    void EEPROMEX_CTRL_LOW(void);
 

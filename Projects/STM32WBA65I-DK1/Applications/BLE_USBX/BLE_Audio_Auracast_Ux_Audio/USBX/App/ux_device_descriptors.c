@@ -51,7 +51,6 @@ uint8_t UserClassInstance[USBD_MAX_CLASS_INTERFACES] = {
 ULONG USBD_AUDIO20_PLAYBACK_FREQENCIES[USBD_AUDIO_PLAY_FREQ_COUNT] = {
   USBD_AUDIO_FREQ_48_K,
 };
-
 /* The generic device descriptor buffer that will be filled by builder
    Size of the buffer is the maximum possible device FS descriptor size. */
 #if defined ( __ICCARM__ ) /* IAR Compiler */
@@ -154,6 +153,7 @@ uint8_t *USBD_Get_Device_Framework_Speed(uint8_t Speed, ULONG *Length)
 
   if (USBD_FULL_SPEED == Speed)
   {
+    _ux_utility_memory_set(&USBD_Device_FS, 0U, sizeof(USBD_Device_FS));
     USBD_Device_Framework_Builder(&USBD_Device_FS, pDevFrameWorkDesc_FS,
                                   UserClassInstance, Speed);
 
@@ -164,6 +164,7 @@ uint8_t *USBD_Get_Device_Framework_Speed(uint8_t Speed, ULONG *Length)
   }
   else
   {
+    _ux_utility_memory_set(&USBD_Device_HS, 0U, sizeof(USBD_Device_HS));
     USBD_Device_Framework_Builder(&USBD_Device_HS, pDevFrameWorkDesc_HS,
                                   UserClassInstance, Speed);
 
@@ -475,6 +476,7 @@ uint8_t  USBD_FrameWork_AddClass(USBD_DevClassHandleTypeDef *pdev,
                                  uint8_t cfgidx, uint8_t Speed,
                                  uint8_t *pCmpstConfDesc)
 {
+
   if ((pdev->classId < USBD_MAX_SUPPORTED_CLASS) &&
       (pdev->tclasslist[pdev->classId].Active == 0U))
   {
@@ -536,7 +538,10 @@ uint8_t  USBD_FrameWork_AddToConfDesc(USBD_DevClassHandleTypeDef *pdev, uint8_t 
       pdev->tclasslist[pdev->classId].Ifs[1] = (uint8_t)(interface + 1U);
 
       /* Assign endpoint numbers */
-      pdev->tclasslist[pdev->classId].NumEps += 2U; /* EP_OUT + Feedback */
+      pdev->tclasslist[pdev->classId].NumEps += 1U; /* EP_OUT */
+#ifdef UX_DEVICE_CLASS_AUDIO_FEEDBACK_SUPPORT
+      pdev->tclasslist[pdev->classId].NumEps += 1U; /* EP_Feedback */
+#endif /* UX_DEVICE_CLASS_AUDIO_FEEDBACK_SUPPORT */
 
       /* Check the current speed to assign endpoint OUT */
       if (pdev->Speed == USBD_HIGH_SPEED)
@@ -545,11 +550,14 @@ uint8_t  USBD_FrameWork_AddToConfDesc(USBD_DevClassHandleTypeDef *pdev, uint8_t 
         USBD_FrameWork_AssignEp(pdev, USBD_AUDIO_PLAY_EPOUT_ADDR,
                                 USBD_EP_TYPE_ISOC|USBD_EP_ATTR_ISOC_ASYNC,
                                 USBD_AUDIO_PLAY_EPOUT_HS_MPS);
+#ifdef UX_DEVICE_CLASS_AUDIO_FEEDBACK_SUPPORT
 
-        /* Assign Feedback Endpoint */
-        USBD_FrameWork_AssignEp(pdev, USBD_AUDIO_FEEDBACK_EPIN_ADDR,
+        /* Assign FEEDBACK Endpoint */
+        USBD_FrameWork_AssignEp(pdev, USBD_AUDIO_PLAY_EP_FEEDBACK_ADDR,
                                 USBD_EP_TYPE_ISOC|USBD_EP_ATTR_ISOC_FEEDBACK,
-                                USBD_AUDIO_FEEDBACK_EPIN_HS_MPS);
+                                USBD_AUDIO_PLAY_EP_FEEDBACK_HS_MPS);
+
+#endif /* UX_DEVICE_CLASS_AUDIO_FEEDBACK_SUPPORT */
 
       }
       else
@@ -559,10 +567,14 @@ uint8_t  USBD_FrameWork_AddToConfDesc(USBD_DevClassHandleTypeDef *pdev, uint8_t 
                                 USBD_EP_TYPE_ISOC|USBD_EP_ATTR_ISOC_ASYNC,
                                 USBD_AUDIO_PLAY_EPOUT_FS_MPS);
 
-        /* Assign Feedback Endpoint */
-        USBD_FrameWork_AssignEp(pdev, USBD_AUDIO_FEEDBACK_EPIN_ADDR,
+#ifdef UX_DEVICE_CLASS_AUDIO_FEEDBACK_SUPPORT
+
+        /* Assign FEEDBACK Endpoint */
+        USBD_FrameWork_AssignEp(pdev, USBD_AUDIO_PLAY_EP_FEEDBACK_ADDR,
                                 USBD_EP_TYPE_ISOC|USBD_EP_ATTR_ISOC_FEEDBACK,
-                                USBD_AUDIO_FEEDBACK_EPIN_FS_MPS);
+                                USBD_AUDIO_PLAY_EP_FEEDBACK_FS_MPS);
+
+#endif /* UX_DEVICE_CLASS_AUDIO_FEEDBACK_SUPPORT */
 
       }
 
@@ -777,7 +789,7 @@ static void USBD_FrameWork_AUDIO20_Desc(USBD_DevClassHandleTypeDef *pdev,
   pSpeakerFUDesc->bDescriptorSubtype = UX_DEVICE_CLASS_AUDIO_AC_FEATURE_UNIT;
   pSpeakerFUDesc->bUnitID = USBD_AUDIO_PLAY_FEATURE_UNIT_ID;
   pSpeakerFUDesc->bSourceID = USBD_AUDIO_PLAY_TERMINAL_INPUT_ID;
-  pSpeakerFUDesc->bmaControls[0] = 0x00000000U;
+  pSpeakerFUDesc->bmaControls[0] = USBD_AUDIO_FU_CONTROL_MUTE|USBD_AUDIO_FU_CONTROL_VOLUME;
   pSpeakerFUDesc->bmaControls[1] = 0x00000000U;
   pSpeakerFUDesc->bmaControls[2] = 0x00000000U;
   pSpeakerFUDesc->iFeature = 0x00;
@@ -815,7 +827,11 @@ static void USBD_FrameWork_AUDIO20_Desc(USBD_DevClassHandleTypeDef *pdev,
   /* Interface 1, Alternate Setting 1 */
   __USBD_FRAMEWORK_SET_IF(pdev->tclasslist[pdev->classId].Ifs[interface_index],
                           0x01U,
+#ifdef UX_DEVICE_CLASS_AUDIO_FEEDBACK_SUPPORT
                           0x02U,
+#else /* UX_DEVICE_CLASS_AUDIO_FEEDBACK_SUPPORT */
+                          0x01U,
+#endif /* UX_DEVICE_CLASS_AUDIO_FEEDBACK_SUPPORT */
                           UX_DEVICE_CLASS_AUDIO_CLASS,
                           UX_DEVICE_CLASS_AUDIO_SUBCLASS_AUDIOSTREAMING,
                           UX_DEVICE_CLASS_AUTIO_PROTOCOL_VERSION_02_00,
@@ -858,16 +874,6 @@ static void USBD_FrameWork_AUDIO20_Desc(USBD_DevClassHandleTypeDef *pdev,
   /* Increment endpoint index */
   endpoint_index++;
 
-  /* Append Endpoint descriptor to Configuration descriptor */
-  __USBD_FRAMEWORK_SET_EP((pdev->tclasslist[pdev->classId].Eps[endpoint_index].add),
-                          (pdev->tclasslist[pdev->classId].Eps[endpoint_index].type),
-                          (uint16_t)(pdev->tclasslist[pdev->classId].Eps[endpoint_index].size),
-                          USBD_AUDIO_FEEDBACK_EPIN_HS_BINTERVAL,
-                          USBD_AUDIO_FEEDBACK_EPIN_FS_BINTERVAL);
-
-  /* Increment endpoint index */
-  endpoint_index++;
-
   /* USB Speaker Audio Class-Specific AS Isochronous Audio Data Endpoint Descriptor */
   pSpeakerASCSEpDesc = ((USBD_AUDIOSCSEpDescTypeDef *)(pConf + *Sze));
   pSpeakerASCSEpDesc->bLength = (uint8_t)sizeof(USBD_AUDIOSCSEpDescTypeDef);
@@ -878,6 +884,17 @@ static void USBD_FrameWork_AUDIO20_Desc(USBD_DevClassHandleTypeDef *pdev,
   pSpeakerASCSEpDesc->bLockDelayUnits = 0x00U;
   pSpeakerASCSEpDesc->wLockDelay = 0x0000U;
   *Sze += (uint32_t)sizeof(USBD_AUDIOSCSEpDescTypeDef);
+
+#ifdef UX_DEVICE_CLASS_AUDIO_FEEDBACK_SUPPORT
+
+  /* Append Endpoint descriptor to Configuration descriptor */
+  __USBD_FRAMEWORK_SET_EP((pdev->tclasslist[pdev->classId].Eps[endpoint_index].add),
+                          (pdev->tclasslist[pdev->classId].Eps[endpoint_index].type),
+                          (uint16_t)(pdev->tclasslist[pdev->classId].Eps[endpoint_index].size),
+                          USBD_AUDIO_PLAY_EP_FEEDBACK_HS_BINTERVAL,
+                          USBD_AUDIO_PLAY_EP_FEEDBACK_FS_BINTERVAL);
+
+#endif /* UX_DEVICE_CLASS_AUDIO_FEEDBACK_SUPPORT */
 
 #endif /* USBD_AUDIO_PLAYBACK_ACTIVATED == 1 */
 

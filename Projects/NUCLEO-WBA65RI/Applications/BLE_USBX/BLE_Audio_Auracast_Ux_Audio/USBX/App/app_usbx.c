@@ -20,7 +20,6 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "app_usbx.h"
-#include "stm32_seq.h"
 
 /* USER CODE BEGIN UX_Memory_Buffer */
 
@@ -54,8 +53,7 @@ UINT MX_USBX_Init(VOID)
     /* USER CODE END USBX_SYSTEM_INITIALIZE_ERROR */
   }
 
-  ret = MX_USBX_Device_Init();
-  if(ret != UX_SUCCESS)
+  if (MX_USBX_Device_Init() != UX_SUCCESS)
   {
   /* USER CODE BEGIN MX_USBX_Device_Init_Error */
     while(1)
@@ -74,11 +72,11 @@ UINT MX_USBX_Init(VOID)
   * @brief  _ux_utility_interrupt_disable
   *         USB utility interrupt disable.
   * @param  none
-  * @retval none
+  * @retval interrupt save
   */
 ALIGN_TYPE _ux_utility_interrupt_disable(VOID)
 {
-  UINT interrupt_save;
+  UINT interrupt_save = 0;
   /* USER CODE BEGIN _ux_utility_interrupt_disable */
   interrupt_save = __get_PRIMASK();
   __disable_irq();

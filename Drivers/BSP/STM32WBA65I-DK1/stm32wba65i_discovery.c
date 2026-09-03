@@ -36,11 +36,11 @@
   * @{
   */
 
-/** @defgroup STM32WBA65I_DK1_COMMON STM32WBA65I-DK1 COMMON
+/** @defgroup STM32WBA65I_DK1_COMMON COMMON
   * @{
   */
 
-/** @defgroup STM32WBA65I_DK1_COMMON_Private_Defines STM32WBA65I-DK1 COMMON Private Defines
+/** @defgroup STM32WBA65I_DK1_COMMON_Private_Defines COMMON Private Defines
   * @{
   */
 #if (USE_BSP_COM_FEATURE == 1)
@@ -54,7 +54,7 @@
   * @}
   */
 
-/** @defgroup STM32WBA65I_DK1_COMMON_Private_FunctionPrototypes STM32WBA65I-DK1 COMMON Private Function Prototypes
+/** @defgroup STM32WBA65I_DK1_COMMON_Private_FunctionPrototypes COMMON Private Function Prototypes
   * @{
   */
 #if (USE_BSP_COM_FEATURE == 1)
@@ -71,7 +71,7 @@ static void ADC_LevelOutOfWindowCallback(ADC_HandleTypeDef *hadc);
   * @}
   */
 
-/** @defgroup STM32WBA65I_DK1_COMMON_Exported_Variables STM32WBA65I-DK1 COMMON Exported Variables
+/** @defgroup STM32WBA65I_DK1_COMMON_Exported_Variables COMMON Exported Variables
   * @{
   */
 #if (USE_BSP_COM_FEATURE == 1)
@@ -85,7 +85,7 @@ __IO uint32_t joy_tick = 0U;
   * @}
   */
 
-/** @defgroup STM32WBA65I_DK1_COMMON_Private_Variables STM32WBA65I-DK1 COMMON Private Variables
+/** @defgroup STM32WBA65I_DK1_COMMON_Private_Variables COMMON Private Variables
   * @{
   */
 static uint16_t      LED_PIN[LEDn]  = {LD5_PIN, LD6_PIN};
@@ -127,7 +127,7 @@ static uint32_t          CurrentJoyPins[JOYn]  = {0U};
   * @}
   */
 
-/** @defgroup STM32WBA65I_DK1_COMMON_Exported_Functions STM32WBA65I-DK1 COMMON Exported Functions
+/** @defgroup STM32WBA65I_DK1_COMMON_Exported_Functions COMMON Exported Functions
   * @{
   */
 
@@ -158,7 +158,7 @@ const uint8_t *BSP_GetBoardID(void)
   return (const uint8_t *)STM32WBA65I_DK1_BSP_BOARD_ID;
 }
 
-/** @defgroup STM32WBA65I_DK1_COMMON_LED_Functions STM32WBA65I-DK1 COMMON LED Functions
+/** @defgroup STM32WBA65I_DK1_COMMON_LED_Functions COMMON LED Functions
   * @{
   */
 
@@ -187,7 +187,7 @@ int32_t BSP_LED_Init(Led_TypeDef Led)
   /* configure the GPIO_LED pin */
   GPIO_Init.Pin   = LED_PIN[Led];
   GPIO_Init.Mode  = GPIO_MODE_OUTPUT_PP;
-  GPIO_Init.Pull  = GPIO_PULLUP;
+  GPIO_Init.Pull  = GPIO_NOPULL;
   GPIO_Init.Speed = GPIO_SPEED_FREQ_HIGH;
   HAL_GPIO_Init(LED_PORT[Led], &GPIO_Init);
 
@@ -284,7 +284,7 @@ int32_t BSP_LED_GetState(Led_TypeDef Led)
   */
 
 #if (USE_BSP_COM_FEATURE == 1)
-/** @defgroup STM32WBA65I_DK1_COMMON_COM_Functions STM32WBA65I-DK1 COMMON COM Functions
+/** @defgroup STM32WBA65I_DK1_COMMON_COM_Functions COMMON COM Functions
   * @{
   */
 
@@ -491,7 +491,7 @@ __weak HAL_StatusTypeDef MX_USART1_Init(UART_HandleTypeDef* huart, MX_UART_InitT
   */
 #endif /* (USE_BSP_COM_FEATURE == 1) */
 
-/** @defgroup STM32WBA65I_DK1_COMMON_JOY_Functions STM32WBA65I-DK1 COMMON Joystick Functions
+/** @defgroup STM32WBA65I_DK1_COMMON_JOY_Functions COMMON Joystick Functions
   * @{
   */
 
@@ -942,7 +942,7 @@ void HAL_ADC_LevelOutOfWindowCallback(ADC_HandleTypeDef* hadc)
   * @}
   */
 
-/** @defgroup STM32WBA65I_DK1_COMMON_Private_Functions STM32WBA65I-DK1 COMMON Private Functions
+/** @defgroup STM32WBA65I_DK1_COMMON_Private_Functions COMMON Private Functions
   * @{
   */
 #if (USE_BSP_COM_FEATURE == 1)

@@ -35,7 +35,6 @@ extern "C" {
 #include "main.h"
 #include "ux_device_class_audio20.h"
 #include "ux_device_descriptors.h"
-#include "stm32wba65i_discovery_audio.h"
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/
@@ -62,18 +61,24 @@ ULONG USBD_AUDIO_PlaybackStreamGetMaxFrameBufferNumber(VOID);
 ULONG USBD_AUDIO_PlaybackStreamGetMaxFrameBufferSize(VOID);
 /* USER CODE BEGIN EFP */
 /**
+  * @brief Reset USB buffers and stop Audio Timer
+  * @param none
+  * @retval none
+  */
+void USBD_AUDIO_Stop(void);
+
+/**
+  * @brief Compute current USB feedback value and send it to USBX stack
+  * @retval None
+  */
+void USBD_ComputeUSBFeedback(void);
+
+/**
   * @brief Feedback task ran by USBX stack when necessary
   * @param stream: pointer to USBX Class Audio Stream
   * @retval status of the operation
   */
 UINT USBD_AUDIO_Feedback_task_function(UX_DEVICE_CLASS_AUDIO_STREAM *stream);
-
-/**
-  * @brief Reset USB buffers and stop Audio DMA
-  * @param none
-  * @retval none
-  */
-void USBD_AUDIO_Stop(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
@@ -103,8 +108,8 @@ typedef struct
 
 /* Audio buffer control structure */
 typedef struct {
-  uint8_t  buff[USB_AUDIO_BUF_SIZE];
-  uint8_t  rd_enable;
+  uint8_t buff[USB_AUDIO_BUF_SIZE];
+  uint8_t rd_enable;
   uint32_t rd_ptr;
   uint32_t wr_ptr;
 }AUDIO_OUT_BufferTypeDef;

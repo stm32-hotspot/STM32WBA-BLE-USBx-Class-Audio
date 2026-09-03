@@ -19,6 +19,10 @@
 #ifndef DEBUG_SIGNALS_H
 #define DEBUG_SIGNALS_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "bsp.h"
 
 /**************************************************/
@@ -234,6 +238,10 @@ typedef enum {
 #if (USE_RT_DEBUG_LLHWC_CMN_CLR_TIMER_ERROR == 1)
   RT_DEBUG_LLHWC_CMN_CLR_TIMER_ERROR,
 #endif /* USE_RT_DEBUG_LLHWC_CMN_CLR_TIMER_ERROR */
+
+#if (USE_RT_DEBUG_LLHWC_CMN_CLR_ACTTMR_ERROR == 1)
+  RT_DEBUG_LLHWC_CMN_CLR_ACTTMR_ERROR,
+#endif /* USE_RT_DEBUG_LLHWC_CMN_CLR_ACTTMR_ERROR */
 
 #if (USE_RT_DEBUG_LLHWC_LL_ISR == 1)
   RT_DEBUG_LLHWC_LL_ISR,
@@ -811,11 +819,19 @@ typedef enum {
   RT_DEBUG_LLHWC_GET_CH_IDX_ALGO_2,
 #endif /* USE_RT_DEBUG_LLHWC_GET_CH_IDX_ALGO_2 */
 
+#if (USE_RT_DEBUG_BACK_FROM_DEEP_SLEEP == 1)
+  RT_DEBUG_BACK_FROM_DEEP_SLEEP,
+#endif /* USE_RT_DEBUG_BACK_FROM_DEEP_SLEEP */  
+  
 #include "app_debug_signal_def.h"
 
   RT_DEBUG_SIGNALS_TOTAL_NUM
 } rt_debug_signal_t;
 
 #endif /* CFG_RT_DEBUG_GPIO_MODULE */
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* DEBUG_SIGNALS_H */

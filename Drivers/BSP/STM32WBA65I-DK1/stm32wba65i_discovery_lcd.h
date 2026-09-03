@@ -44,15 +44,15 @@
   * @{
   */
 
-/** @addtogroup STM32WBA65I
+/** @addtogroup STM32WBA65I_DK1
   * @{
   */
 
-/** @defgroup STM32WBA65I_LCD STM32WBA65I LCD
+/** @defgroup STM32WBA65I_DK1_LCD LCD
   * @{
   */
 
-/** @defgroup STM32WBA65I_LCD_Exported_Constants Exported Constants
+/** @defgroup STM32WBA65I_DK1_LCD_Exported_Constants LCD Exported Constants
   * @{
   */
 #define LCD_INSTANCES_NBR                1U
@@ -109,7 +109,7 @@
   * @}
   */
 
-/** @defgroup STM32WBA65I_LCD_Exported_Types Exported Types
+/** @defgroup STM32WBA65I_DK1_LCD_Exported_Types LCD Exported Types
   * @{
   */
 typedef struct
@@ -123,7 +123,7 @@ typedef struct
   * @}
   */
 
-/** @addtogroup STM32WBA65I_LCD_Private_Variables
+/** @addtogroup STM32WBA65I_DK1_LCD_Private_Variables
   * @{
   */
 extern void                  *LcdCompObj;
@@ -133,7 +133,7 @@ extern const LCD_UTILS_Drv_t LCD_Driver;
   * @}
   */
 
-/** @defgroup STM32WBA65I_LCD_Exported_Functions Exported Functions
+/** @defgroup STM32WBA65I_DK1_LCD_Exported_Functions LCD Exported Functions
   * @{
   */
 int32_t  BSP_LCD_Init(uint32_t Instance, uint32_t Orientation);

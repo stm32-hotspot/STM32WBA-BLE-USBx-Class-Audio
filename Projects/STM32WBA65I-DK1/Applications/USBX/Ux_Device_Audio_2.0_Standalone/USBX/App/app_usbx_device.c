@@ -24,7 +24,6 @@
 /* USER CODE BEGIN Includes */
 #include "app_usbx.h"
 #include "log_module.h"
-
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -49,16 +48,16 @@ static ULONG audio_configuration_number;
 static UX_DEVICE_CLASS_AUDIO_PARAMETER audio_parameter;
 static UX_DEVICE_CLASS_AUDIO_STREAM_PARAMETER audio_stream_parameter[USBD_AUDIO_STREAM_NMNBER];
 static uint8_t audio_stream_index = 0U;
+extern PCD_HandleTypeDef           hpcd_USB_OTG_HS;
 
 /* USER CODE BEGIN PV */
-extern PCD_HandleTypeDef           hpcd_USB_OTG_HS;
-BSP_AUDIO_Init_t AudioPlayInit;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
+static UINT USBD_ChangeFunction(ULONG Device_State);
 /* USER CODE BEGIN PFP */
 VOID USBX_APP_Device_Init(VOID);
-static UINT USBX_System_Slave_Change(ULONG param);
 /* USER CODE END PFP */
 
 /**
@@ -133,17 +132,17 @@ UINT MX_USBX_Device_Stack_Init(void)
                                  string_framework_length,
                                  language_id_framework,
                                  language_id_framework_length,
-                                 USBX_System_Slave_Change) != UX_SUCCESS)
+                                 USBD_ChangeFunction) != UX_SUCCESS)
   {
     /* USER CODE BEGIN USBX_DEVICE_INITIALIZE_ERROR */
     return UX_ERROR;
     /* USER CODE END USBX_DEVICE_INITIALIZE_ERROR */
   }
 
-  /* Initialize the storage class parameters for the device */
+  /* Initialize audio playback control values */
   USBD_AUDIO_SetControlValues();
 
-  /* Store the number of LUN in this device storage instance */
+  /* Initialize the audio class parameters for audio playback */
   audio_stream_parameter[audio_stream_index].ux_device_class_audio_stream_parameter_callbacks.ux_device_class_audio_stream_change
     = USBD_AUDIO_PlaybackStreamChange;
 
@@ -159,8 +158,10 @@ UINT MX_USBX_Device_Stack_Init(void)
   audio_stream_parameter[audio_stream_index].ux_device_class_audio_stream_parameter_task_function
     = ux_device_class_audio_read_task_function;
 
+#ifdef UX_DEVICE_CLASS_AUDIO_FEEDBACK_SUPPORT
   audio_stream_parameter[audio_stream_index].ux_device_class_audio_stream_parameter_feedback_task_function
-    = USBD_AUDIO_Feedback_task_function;
+    = ux_device_class_audio_feedback_task_function;
+#endif /* UX_DEVICE_CLASS_AUDIO_FEEDBACK_SUPPORT */
 
   /* Set the parameters for audio device */
   audio_parameter.ux_device_class_audio_parameter_streams_nb  = USBD_AUDIO_STREAM_NMNBER;
@@ -175,26 +176,34 @@ UINT MX_USBX_Device_Stack_Init(void)
  audio_parameter.ux_device_class_audio_parameter_callbacks.ux_device_class_audio_control_process
     = USBD_AUDIO_ControlProcess;
 
-  /* USER CODE BEGIN STORAGE_PARAMETER */
+  /* Get audio configuration number */
   audio_configuration_number = USBD_Get_Configuration_Number(CLASS_TYPE_AUDIO_20, 0);
 
-  /* USER CODE END STORAGE_PARAMETER */
+  /* Find audio interface number */
   audio_interface_number = USBD_Get_Interface_Number(CLASS_TYPE_AUDIO_20, 0);
-  /* Initialize the device storage class */
+  /* Initialize the device audio class */
   if (ux_device_stack_class_register(_ux_system_slave_class_audio_name,
                                      ux_device_class_audio_entry,
                                      audio_configuration_number,
                                      audio_interface_number,
                                      &audio_parameter) != UX_SUCCESS)
   {
-    /* USER CODE BEGIN USBX_DEVICE_STORAGE_REGISTER_ERROR */
+    /* USER CODE BEGIN USBX_DEVICE_AUDIO_REGISTER_ERROR */
     return UX_ERROR;
-    /* USER CODE END USBX_DEVICE_STORAGE_REGISTER_ERROR */
+    /* USER CODE END USBX_DEVICE_AUDIO_REGISTER_ERROR */
   }
 
-  /* USER CODE BEGIN MX_USBX_Device_Init1 */
+  /* Initialize and link controller HAL driver */
+  ux_dcd_stm32_initialize((ULONG)USB_OTG_HS, (ULONG)&hpcd_USB_OTG_HS);
+  /* USER CODE BEGIN MX_USBX_Device_Stack_Init_PostTreatment */
+
+  /* USER CODE END MX_USBX_Device_Stack_Init_PostTreatment */
+
+  /* USER CODE BEGIN MX_USBX_Device_Stack_Init 1 */
+  USBX_APP_Device_Init();
 
   /* Init Audio BSP to 48KHz stereo 16bit*/
+  BSP_AUDIO_Init_t AudioPlayInit;
   AudioPlayInit.Device = AUDIO_OUT_DEVICE_HEADPHONE;
   AudioPlayInit.ChannelsNbr = 2;
   AudioPlayInit.SampleRate = AUDIO_FREQUENCY_48K;
@@ -205,15 +214,6 @@ UINT MX_USBX_Device_Stack_Init(void)
   {
     Error_Handler();
   }
-
-  USBX_APP_Device_Init();
-
-  /* USER CODE BEGIN MX_USBX_Device_Stack_Init_PostTreatment */
-
-  /* USER CODE END MX_USBX_Device_Stack_Init_PostTreatment */
-
-  /* USER CODE BEGIN MX_USBX_Device_Stack_Init 1 */
-
   /* USER CODE END MX_USBX_Device_Stack_Init 1 */
 
   return ret;
@@ -261,81 +261,133 @@ UINT MX_USBX_Device_Stack_DeInit(void)
   return ret;
 }
 
-/* USER CODE BEGIN 1 */
-
 /**
-  * @brief  USBX_APP_Device_Init
-  *         Initialization of USB device.
-  * @param  none
-  * @retval none
-  */
-VOID USBX_APP_Device_Init(VOID)
-{
-  /* USER CODE BEGIN USB_Device_Init_PreTreatment_0 */
-
-  /* USER CODE END USB_Device_Init_PreTreatment_0 */
-
-
-  /* USER CODE BEGIN USB_Device_Init_PreTreatment_1 */
-
-  HAL_PCDEx_SetRxFiFo(&hpcd_USB_OTG_HS, 0x200);
-  HAL_PCDEx_SetTxFiFo(&hpcd_USB_OTG_HS, 0, 0x40);
-  HAL_PCDEx_SetTxFiFo(&hpcd_USB_OTG_HS, 1, 0x100);
-
-  /* USER CODE END USB_Device_Init_PreTreatment_1 */
-
-  /* Initialize and link controller HAL driver */
-  ux_dcd_stm32_initialize((ULONG)USB_OTG_HS, (ULONG)&hpcd_USB_OTG_HS);
-
-  /* Start the USB device */
-  HAL_PCD_Start(&hpcd_USB_OTG_HS);
-
-  /* USER CODE BEGIN USB_Device_Init_PostTreatment */
-
-  /* USER CODE END USB_Device_Init_PostTreatment */
-}
-
-/**
-  * @brief  MX_USBX_Device_Process
-  *         Run USBX state machine.
-  * @retval none
-  */
-VOID USBX_Device_Process()
-{
-  ux_device_stack_tasks_run();
-  ux_device_stack_tasks_run();
-}
-
-/**
-  * @brief Called by USBX stack when USB device state has changed
-  * @param param: new USB state
+  * @brief  USBD_ChangeFunction
+  *         This function is called when the device state changes.
+  * @param  Device_State: USB Device State
   * @retval status
   */
-static UINT USBX_System_Slave_Change(ULONG param)
+static UINT USBD_ChangeFunction(ULONG Device_State)
 {
-  switch (param)
+   UINT status = UX_SUCCESS;
+
+  /* USER CODE BEGIN USBD_ChangeFunction0 */
+
+  /* USER CODE END USBD_ChangeFunction0 */
+
+  switch (Device_State)
   {
     case UX_DEVICE_ATTACHED:
-    {
+
+      /* USER CODE BEGIN UX_DEVICE_ATTACHED */
       /* USB device is connected to host */
       LOG_INFO_APP("UX_DEVICE_ATTACHED\n");
 #if (CFG_LCD_SUPPORTED == 1)
       Set_USB_State(USB_STATE_CONNECTED);
 #endif /* (CFG_LCD_SUPPORTED == 1) */
+      /* USER CODE END UX_DEVICE_ATTACHED */
+
       break;
-    }
+
+    case UX_DEVICE_REMOVED:
+
+      /* USER CODE BEGIN UX_DEVICE_REMOVED */
+
+      /* USER CODE END UX_DEVICE_REMOVED */
+
+      break;
+
+    case UX_DCD_STM32_DEVICE_CONNECTED:
+
+      /* USER CODE BEGIN UX_DCD_STM32_DEVICE_CONNECTED */
+
+      /* USER CODE END UX_DCD_STM32_DEVICE_CONNECTED */
+
+      break;
+
+    case UX_DCD_STM32_DEVICE_DISCONNECTED:
+
+      /* USER CODE BEGIN UX_DCD_STM32_DEVICE_DISCONNECTED */
+
+      /* USER CODE END UX_DCD_STM32_DEVICE_DISCONNECTED */
+
+      break;
+
     case UX_DCD_STM32_DEVICE_SUSPENDED:
-    {
+
+      /* USER CODE BEGIN UX_DCD_STM32_DEVICE_SUSPENDED */
       /* USB device is disconnected from host */
       LOG_INFO_APP("UX_DCD_STM32_DEVICE_SUSPENDED\n");
 #if (CFG_LCD_SUPPORTED == 1)
       Set_USB_State(USB_STATE_DISCONNECTED);
 #endif /* (CFG_LCD_SUPPORTED == 1) */
       USBD_AUDIO_Stop();
+      /* USER CODE END UX_DCD_STM32_DEVICE_SUSPENDED */
+
       break;
-    }
+
+    case UX_DCD_STM32_DEVICE_RESUMED:
+
+      /* USER CODE BEGIN UX_DCD_STM32_DEVICE_RESUMED */
+
+      /* USER CODE END UX_DCD_STM32_DEVICE_RESUMED */
+
+      break;
+
+    case UX_DCD_STM32_SOF_RECEIVED:
+
+      /* USER CODE BEGIN UX_DCD_STM32_SOF_RECEIVED */
+
+      /* USER CODE END UX_DCD_STM32_SOF_RECEIVED */
+
+      break;
+
+    default:
+
+      /* USER CODE BEGIN DEFAULT */
+
+      /* USER CODE END DEFAULT */
+
+      break;
+
   }
-  return UX_SUCCESS;
+
+  /* USER CODE BEGIN USBD_ChangeFunction1 */
+
+  /* USER CODE END USBD_ChangeFunction1 */
+
+  return status;
 }
+/* USER CODE BEGIN 1 */
+
+/**
+  * @brief  USBX_APP_Device_Init
+  *         Initialization of USB device.
+  * @param  none 
+  * @retval none
+  */
+VOID USBX_APP_Device_Init(VOID)
+{
+  HAL_PCDEx_SetRxFiFo(&hpcd_USB_OTG_HS, 0x200);
+  HAL_PCDEx_SetTxFiFo(&hpcd_USB_OTG_HS, 0, 0x40);
+  HAL_PCDEx_SetTxFiFo(&hpcd_USB_OTG_HS, 1, 0x100);
+
+  /* Start the USB device */
+  HAL_PCD_Start(&hpcd_USB_OTG_HS);
+}
+
+/**
+  * @brief  MX_USBX_Device_Process
+  *         Run USBX state machine.
+  * @param  arg: not used
+  * @retval none
+  */
+VOID USBX_Device_Process(void)
+{
+  /* Necessary to run the task 2 times to correctly process the USB packets */
+  ux_device_stack_tasks_run();
+  ux_device_stack_tasks_run();
+}
+
 
 /* USER CODE END 1 */

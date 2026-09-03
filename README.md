@@ -4,7 +4,7 @@ The objective of this project is to provide examples of the implementation of th
 
 Two different projects are available in this repository:
  * [**Ux_Device_Audio_2.0_Standalone**](#ux_device_audio_20_standalone) runs on **STM32WBA65I-DK1** and implements USB Class Audio using USBX in Standalone mode (without Azure RTOS). The audio received by USB is rendered on the 3.5mm jack output of the Discovery Kit through SAI.
- * [**BLE_Audio_Auracast_Ux_Audio**](#ble_audio_auracast_ux_audio) runs on both **STM32WBA65I-DK1** and **NUCLEO-WBA65RI** and implements USB Class Audio using USBX in Standalone mode, along with a Auracast™ Source using the Bluetooth® LE Audio library from STMicroelectronics.
+ * [**BLE_Audio_Auracast_Ux_Audio**](#ble_audio_auracast_ux_audio) runs on both **STM32WBA65I-DK1** and **NUCLEO-WBA65RI** and implements USB Class Audio using USBX in Standalone mode, along with a Auracast™ Source using the Bluetooth® LE Audio library from STMicroelectronics. Default mode is stereo streaming, a variant allows to stream 4 languages over 4 BIS.
 
 ## Table of content
 * **[Ux_Device_Audio_2.0_Standalone](#ux_device_audio_20_standalone)**
@@ -15,6 +15,7 @@ Two different projects are available in this repository:
   * **[Pictograms (STM32WBA65I-DK1)](#pictograms-stm32wba65i-dk1)**
   * **[LEDs (NUCLEO-WBA65RI)](#leds-nucleo-wba65ri)**
   * **[Software data architecture](#software-data-architecture-1)**
+  * **[4 channel demo variant](#4-channel-demo-variant)**
 * **[USBX Standalone Porting](#usbx-standalone-porting)**
 * **[Clock Synchronization](#clock-synchronization)**
 
@@ -23,8 +24,8 @@ Two different projects are available in this repository:
 This example runs on the **STM32WBA65I-DK1** board.
 
 To build the projects, you need one of the following IDE:
-  * IAR Embedded Workbench for ARM (EWARM) 9.20.1
-  * STM32CubeIDE 1.18.0
+  * IAR Embedded Workbench for ARM (EWARM) 9.60.3
+  * STM32CubeIDE 2.2.0
 
 ### Setup
 The following materials are needed to replicate the demo:
@@ -69,8 +70,8 @@ The 10ms between the write and the read pointers are used to ensure that clock d
 This example runs on **STM32WBA65I-DK1** and **NUCLEO-WBA65RI** boards.
 
 To build the projects, you need one of the following IDE:
-  * IAR Embedded Workbench for ARM (EWARM) 9.20.1
-  * STM32CubeIDE 1.18.1
+  * IAR Embedded Workbench for ARM (EWARM) 9.60.3
+  * STM32CubeIDE 2.2.0
 
 > [!WARNING]
 > Using STM32CubeIDE in **Debug** configuration can cause audio glitches due to GCC optimization for this debug. Consider using the **Release** configuration when not debugging, or use IAR.
@@ -78,7 +79,7 @@ To build the projects, you need one of the following IDE:
 ### Setup
 The following materials are needed to replicate the demo:
  * An **STM32WBA65I-DK1** or a **NUCLEO-WBA65RI** running the BLE_Audio_Auracast_Ux_Audio project
- * An **STM32WBA55-DK1** or an **STM32WBA65I-DK1** running the BLE_Audio_PBP_Sink project available in the [STM32CubeWBA firmware package 1.6.1](https://www.st.com/en/embedded-software/stm32cubewba.html)
+ * An **STM32WBA55-DK1** or an **STM32WBA65I-DK1** running the BLE_Audio_PBP_Sink project available in the [STM32CubeWBA firmware package](https://www.st.com/en/embedded-software/stm32cubewba.html)
  * A USB Class Audio host: any PC or smartphone
  * A USB cable to connect the Discovery Kit to the USB host (usually a USB-A to USB-C cable for PC and USB-C to USB-C for smartphone)
  * Headphones with a 3.5mm jack input
@@ -120,7 +121,7 @@ During the runtime of the BLE_Audio_Auracast_Ux_Audio app on **NUCLEO-WBA65RI**,
 |:---------|:---------    |:----------                               |   
 | <img src="Utilities/Media/LED_Blue_Off.png" alt="Blue LED Off" width="45" height="auto"> | Off   | Auracast is starting                                |
 | <img src="Utilities/Media/LED_Blue_On.png" alt="Blue LED On" width="45" height="auto"> | Static     | Auracast Source established, audio is not streaming |
-| <img src="Utilities/Media/LED_Blue_Blink.png" alt="Blue LED Bliking" width="45" height="auto"> | Blinking | Auracast Source established, audio is streaming  |
+| <img src="Utilities/Media/LED_Blue_Blink.png" alt="Blue LED Blinking" width="45" height="auto"> | Blinking | Auracast Source established, audio is streaming  |
 
 ### Software data architecture
 The BLE_Audio_Auracast_Ux_Audio application works with a single 50 milliseconds buffer `BufferCtl.buf`. It retrieves data from the USBX stack during the `USBD_AUDIO_PlaybackStreamFrameDone` callback using the `BufferCtl.wr_ptr` pointer as the destination in the buffer.
@@ -130,6 +131,25 @@ At the start of the USB audio streaming, the general-purpose timer peripheral `T
 <img src="Utilities/Media/Data_Architecture_Auracast_Ux.png" alt="BLE_Audio_Auracast_Ux_Audio data architecture" width="800" height="auto">
 
 The 50ms buffer size is chosen to ensure that there is around 20ms before and after the buffer to send to the codec and the write pointer. This way, we ensure that that clock drift doesn't cause overlap between the sample read and written. Refer to the [Clock Synchronization](#clock-synchronization) section for more details.
+
+### 4 channel demo variant
+The BLE_Audio_Auracast_Ux_Audio project allows two variant with the following behavior.
+
+| Mode  | Application Define  | Behavior  |
+|:---------|:---------    |:----------                               |     
+| Stereo (default) | `DEMO_STEREO`   | Standard stereo streaming over a single BIS. Need a 48KHz "standard" stereo file to be played from the USB Host                   |
+| Multi Language | `DEMO_4_LANGUAGES`  | USB Audio peripheral has 4 channels (FL FR RL RR), Therefore a 16kHz, 4-channel audio file must be read from the Host. Every channel is streamed over a single BIS, so there are 4 BISs in total. Four subgroups are used to expose a dedicated language. |
+
+4tones_16kHz.wav file is available in the Media folder as a example and has been tested with the default Windows™ media player.
+
+> [!WARNING]
+> Note that switching between these modes on Windows™ may require uninstalling the audio peripheral from the device manager due to a cached configuration.
+> 
+> <img src="Utilities/Media/Windows_uninstall.png" alt="windows uninstall" width="400" height="auto">
+> 
+> The device is correctly installed when, from the Sound pannel, the configure pannel show it as a quadraphonic device. 
+> 
+> <img src="Utilities/Media/Windows_SpeakerSetup.png" alt="windows speaker setup" width="800" height="auto">
 
 ## USBX Standalone Porting
 The USBX stack from Microsoft Corporation is originally developed to work with Azure RTOS. However, it includes a build option to make it independent from an OS: `UX_STANDALONE`.
@@ -160,3 +180,9 @@ In BLE_Audio_Auracast_Ux_Audio, the feedback value is evaluated after sending da
 > The following smartphones were tested and found **not compatible** with explicit feedback:
 > * Google Pixel 6, 7 and 8
 > * Sony Xperia V 5
+
+## Troubleshooting
+
+**Caution** : Issues and the pull-requests are **not supported** to submit problems or suggestions related to the software delivered in this repository. The STM32WBA6-USBx-Class-Audio example is being delivered as-is, and not necessarily supported by ST.
+
+**For any other question** related to the product, the hardware performance or characteristics, the tools, the environment, you can submit it to the **ST Community** on the STM32 MCUs related [page](https://community.st.com/s/topic/0TO0X000000BSqSWAW/stm32-mcus).

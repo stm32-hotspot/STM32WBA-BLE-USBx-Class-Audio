@@ -14,8 +14,8 @@ Connectivity, Bare Metal, USB, USB Class Audio
 This example runs on **STM32WBA65I-DK1** boards.
 
 To build the projects, you need one of the following IDE:
-  - IAR Embedded Workbench for ARM (EWARM) 9.20.1
-  - STM32CubeIDE 1.18.1
+  - IAR Embedded Workbench for ARM (EWARM) 9.60.3
+  - STM32CubeIDE 2.2.0
 
 ### __How to use it?__
 The following materials are needed to replicate the demo:

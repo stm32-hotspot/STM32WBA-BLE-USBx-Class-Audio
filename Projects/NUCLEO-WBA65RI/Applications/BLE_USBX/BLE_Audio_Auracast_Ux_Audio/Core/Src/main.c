@@ -6,7 +6,7 @@
   ******************************************************************************
   * @attention
   *
-  * Copyright (c) 2022 STMicroelectronics.
+  * Copyright (c) 2024 STMicroelectronics.
   * All rights reserved.
   *
   * This software is licensed under terms that can be found in the LICENSE file
@@ -18,6 +18,7 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "app_usbx.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -46,25 +47,22 @@ CRC_HandleTypeDef hcrc;
 RAMCFG_HandleTypeDef hramcfg_SRAM1;
 RAMCFG_HandleTypeDef hramcfg_SRAM2;
 
-RNG_HandleTypeDef hrng;
-
 RTC_HandleTypeDef hrtc;
 
 UART_HandleTypeDef huart1;
-DMA_HandleTypeDef handle_GPDMA1_Channel6;
 DMA_HandleTypeDef handle_GPDMA1_Channel0;
 
-/* USER CODE BEGIN PV */
-
 PCD_HandleTypeDef hpcd_USB_OTG_HS;
+
+/* USER CODE BEGIN PV */
 
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 void PeriphCommonClock_Config(void);
-/* USER CODE BEGIN PFP */
 static void MX_USB_OTG_HS_PCD_Init(void);
+/* USER CODE BEGIN PFP */
 static void TIM17_Init(void);
 
 /* USER CODE END PFP */
@@ -111,30 +109,28 @@ int main(void)
   MX_GPDMA1_Init();
   MX_RAMCFG_Init();
   MX_RTC_Init();
-  MX_RNG_Init();
-  MX_CRC_Init();
   MX_ICACHE_Init();
-  /* USER CODE BEGIN 2 */
   MX_USB_OTG_HS_PCD_Init();
-
+  MX_USBX_Init();
+  /* USER CODE BEGIN 2 */
   /* Init TIM17 needed to feed audio data to Codec */
   TIM17_Init();
-
-  /* Init USBX stack */
-  MX_USBX_Init();
   /* USER CODE END 2 */
 
+  /* Init code for STM32_WPAN */
   MX_APPE_Init(NULL);
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+
     /* USER CODE END WHILE */
     MX_APPE_Process();
 
     /* USER CODE BEGIN 3 */
   }
+
   /* USER CODE END 3 */
 }
 
@@ -149,7 +145,7 @@ void SystemClock_Config(void)
 
   /** Supply configuration update enable
   */
-  HAL_PWREx_ConfigSupply(PWR_LDO_SUPPLY);
+  HAL_PWREx_ConfigSupply(PWR_SMPS_SUPPLY);
 
   /** Configure the main internal regulator output voltage
   */
@@ -168,18 +164,11 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI|RCC_OSCILLATORTYPE_HSE
                               |RCC_OSCILLATORTYPE_LSE;
   RCC_OscInitStruct.HSEState = RCC_HSE_ON;
-  RCC_OscInitStruct.HSEDiv = RCC_HSE_DIV1;
+  RCC_OscInitStruct.HSEDiv = RCC_HSE_DIV2;
   RCC_OscInitStruct.LSEState = RCC_LSE_ON;
   RCC_OscInitStruct.HSIState = RCC_HSI_ON;
   RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
-  RCC_OscInitStruct.PLL1.PLLState = RCC_PLL_ON;
-  RCC_OscInitStruct.PLL1.PLLSource = RCC_PLLSOURCE_HSE;
-  RCC_OscInitStruct.PLL1.PLLM = 6;
-  RCC_OscInitStruct.PLL1.PLLN = 73;
-  RCC_OscInitStruct.PLL1.PLLP = 4;
-  RCC_OscInitStruct.PLL1.PLLQ = 4;
-  RCC_OscInitStruct.PLL1.PLLR = 4;
-  RCC_OscInitStruct.PLL1.PLLFractional = 5964;
+  RCC_OscInitStruct.PLL1.PLLState = RCC_PLL_NONE;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
     Error_Handler();
@@ -190,15 +179,24 @@ void SystemClock_Config(void)
   RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
                               |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2
                               |RCC_CLOCKTYPE_PCLK7|RCC_CLOCKTYPE_HCLK5;
-  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
+  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_HSE;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
   RCC_ClkInitStruct.APB7CLKDivider = RCC_HCLK_DIV1;
-  RCC_ClkInitStruct.AHB5_PLL1_CLKDivider = RCC_SYSCLK_PLL1_DIV4;
+  RCC_ClkInitStruct.AHB5_PLL1_CLKDivider = RCC_SYSCLK_PLL1_DIV1;
   RCC_ClkInitStruct.AHB5_HSEHSI_CLKDivider = RCC_SYSCLK_HSEHSI_DIV1;
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_3) != HAL_OK)
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_0) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+   /* Select SysTick source clock */
+  HAL_SYSTICK_CLKSourceConfig(SYSTICK_CLKSOURCE_LSE);
+
+   /* Re-Initialize Tick with new clock source */
+  if (HAL_InitTick(TICK_INT_PRIORITY) != HAL_OK)
   {
     Error_Handler();
   }
@@ -272,10 +270,8 @@ void MX_GPDMA1_Init(void)
   __HAL_RCC_GPDMA1_CLK_ENABLE();
 
   /* GPDMA1 interrupt Init */
-  HAL_NVIC_SetPriority(GPDMA1_Channel0_IRQn, 6, 0);
-  HAL_NVIC_EnableIRQ(GPDMA1_Channel0_IRQn);
-  HAL_NVIC_SetPriority(GPDMA1_Channel6_IRQn, 5, 0);
-  HAL_NVIC_EnableIRQ(GPDMA1_Channel6_IRQn);
+    HAL_NVIC_SetPriority(GPDMA1_Channel0_IRQn, 6, 0);
+    HAL_NVIC_EnableIRQ(GPDMA1_Channel0_IRQn);
 
   /* USER CODE BEGIN GPDMA1_Init 1 */
 
@@ -339,6 +335,10 @@ void MX_RAMCFG_Init(void)
   {
     Error_Handler();
   }
+  if (HAL_RAMCFG_ConfigWaitState(&hramcfg_SRAM1, RAMCFG_WAITSTATE_0) != HAL_OK)
+  {
+    Error_Handler();
+  }
 
   /** Initialize RAMCFG SRAM2
   */
@@ -347,39 +347,13 @@ void MX_RAMCFG_Init(void)
   {
     Error_Handler();
   }
-  /* USER CODE BEGIN RAMCFG_Init 2 */
-
-  /* USER CODE END RAMCFG_Init 2 */
-
-}
-
-/**
-  * @brief RNG Initialization Function
-  * @param None
-  * @retval None
-  */
-void MX_RNG_Init(void)
-{
-
-  /* USER CODE BEGIN RNG_Init 0 */
-
-  /* USER CODE END RNG_Init 0 */
-
-  /* USER CODE BEGIN RNG_Init 1 */
-
-  /* USER CODE END RNG_Init 1 */
-  hrng.Instance = RNG;
-  hrng.Init.ClockErrorDetection = RNG_CED_DISABLE;
-  if (HAL_RNG_Init(&hrng) != HAL_OK)
+  if (HAL_RAMCFG_ConfigWaitState(&hramcfg_SRAM2, RAMCFG_WAITSTATE_0) != HAL_OK)
   {
     Error_Handler();
   }
-  /* USER CODE BEGIN RNG_Init 2 */
+  /* USER CODE BEGIN RAMCFG_Init 2 */
 
-  /* Disable RNG peripheral and its RCC clock */
-  HW_RNG_Disable( );
-
-  /* USER CODE END RNG_Init 2 */
+  /* USER CODE END RAMCFG_Init 2 */
 
 }
 
@@ -479,7 +453,7 @@ void MX_USART1_UART_Init(void)
   huart1.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
   huart1.Init.ClockPrescaler = UART_PRESCALER_DIV1;
   huart1.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
-  if (HAL_UART_Init(&huart1) != HAL_OK)
+  if (HAL_HalfDuplex_Init(&huart1) != HAL_OK)
   {
     Error_Handler();
   }
@@ -499,29 +473,6 @@ void MX_USART1_UART_Init(void)
 
   /* USER CODE END USART1_Init 2 */
 
-}
-
-/**
-  * @brief GPIO Initialization Function
-  * @param None
-  * @retval None
-  */
-void MX_GPIO_Init(void)
-{
-  /* USER CODE BEGIN MX_GPIO_Init_1 */
-  /* USER CODE END MX_GPIO_Init_1 */
-
-  /* GPIO Ports Clock Enable */
-  __HAL_RCC_GPIOB_CLK_ENABLE();
-  __HAL_RCC_GPIOA_CLK_ENABLE();
-  __HAL_RCC_GPIOD_CLK_ENABLE();
-  __HAL_RCC_GPIOC_CLK_ENABLE();
-  __HAL_RCC_GPIOE_CLK_ENABLE();
-
-  /* USER CODE BEGIN MX_GPIO_Init_2 */
-  LL_DBGMCU_DisableDBGStopMode();
-  LL_DBGMCU_DisableDBGStandbyMode();
-  /* USER CODE END MX_GPIO_Init_2 */
 }
 
 /**
@@ -560,6 +511,82 @@ static void MX_USB_OTG_HS_PCD_Init(void)
 }
 
 /**
+  * @brief GPIO Initialization Function
+  * @param None
+  * @retval None
+  */
+void MX_GPIO_Init(void)
+{
+  /* USER CODE BEGIN MX_GPIO_Init_1 */
+
+  /* USER CODE END MX_GPIO_Init_1 */
+
+  /* GPIO Ports Clock Enable */
+  __HAL_RCC_GPIOB_CLK_ENABLE();
+  __HAL_RCC_GPIOD_CLK_ENABLE();
+  __HAL_RCC_GPIOC_CLK_ENABLE();
+  __HAL_RCC_GPIOA_CLK_ENABLE();
+
+  /* USER CODE BEGIN MX_GPIO_Init_2 */
+  LL_DBGMCU_DisableDBGStopMode();
+  LL_DBGMCU_DisableDBGStandbyMode();
+
+  /* USER CODE END MX_GPIO_Init_2 */
+}
+
+/* USER CODE BEGIN 4 */
+#if (CFG_JOYSTICK_SUPPORTED == 1)
+HAL_StatusTypeDef MX_ADC4_Init(ADC_HandleTypeDef* hadc, MX_ADC_Config_t *MXInit)
+{
+  HAL_StatusTypeDef status = HAL_ERROR;
+
+  if (MXInit->ContinuousConvMode == ENABLE)
+  {
+     /* configuration with high speed conversion not suitable for continuous mode */
+     Error_Handler();
+  }
+
+  /* ADC Config */
+  hadc->Init.ClockPrescaler        = ADC_CLOCK_ASYNC_DIV1;
+  hadc->Init.Resolution            = ADC_RESOLUTION_12B;
+  hadc->Init.DataAlign             = ADC_DATAALIGN_RIGHT;
+  hadc->Init.ScanConvMode          = ADC_SCAN_DISABLE;
+  hadc->Init.EOCSelection          = ADC_EOC_SINGLE_CONV;
+  hadc->Init.LowPowerAutoWait      = DISABLE;
+  hadc->Init.LowPowerAutoPowerOff  = DISABLE;
+  hadc->Init.LowPowerAutonomousDPD = ADC_LP_AUTONOMOUS_DPD_DISABLE;
+  hadc->Init.ContinuousConvMode    = MXInit->ContinuousConvMode;
+  hadc->Init.NbrOfConversion       = 1;
+  hadc->Init.DiscontinuousConvMode = DISABLE;
+  hadc->Init.ExternalTrigConv      = ADC_SOFTWARE_START;
+  hadc->Init.ExternalTrigConvEdge  = ADC_EXTERNALTRIGCONVEDGE_NONE;
+  hadc->Init.DMAContinuousRequests = DISABLE;
+  hadc->Init.Overrun               = ADC_OVR_DATA_OVERWRITTEN;
+  hadc->Init.SamplingTimeCommon1   = ADC_SAMPLETIME_12CYCLES_5;
+  hadc->Init.SamplingTimeCommon2   = ADC_SAMPLETIME_12CYCLES_5;
+  hadc->Init.OversamplingMode      = DISABLE;
+  hadc->Init.TriggerFrequencyMode  = ADC_TRIGGER_FREQ_LOW;
+
+  /* Initialize ADC */
+  if (HAL_ADC_Init(hadc) == HAL_OK)
+  {
+    if (HAL_ADCEx_Calibration_Start(hadc) == HAL_OK)
+    {
+      /* Select the ADC Channel to be converted */
+      ADC_ChannelConfTypeDef sConfig;
+      sConfig.Channel      = JOY1_ADC_CHANNEL;
+      sConfig.Rank         = ADC_REGULAR_RANK_1;
+      sConfig.SamplingTime = ADC_SAMPLINGTIME_COMMON_1;
+      /* Return Joystick initialization status */
+      status = HAL_ADC_ConfigChannel(hadc, &sConfig);
+    }
+  }
+
+  return status;
+}
+#endif /* CFG_JOYSTICK_SUPPORTED == 1 */
+
+/**
   * @brief TIM17 Initialization Function
   * @param None
   * @retval None
@@ -572,12 +599,11 @@ static void TIM17_Init(void)
   LL_APB2_GRP1_EnableClock(LL_APB2_GRP1_PERIPH_TIM17);
 
   /* TIM17 interrupt Init */
-  NVIC_SetPriority(TIM17_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(),1, 0));
-  NVIC_EnableIRQ(TIM17_IRQn);
+  NVIC_SetPriority(TIM17_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(),15, 0));
 
   TIM_InitStruct.Prescaler = 31;
   TIM_InitStruct.CounterMode = LL_TIM_COUNTERMODE_DOWN;
-  TIM_InitStruct.Autoreload = 30720;
+  TIM_InitStruct.Autoreload = 30720 - 1;
   TIM_InitStruct.ClockDivision = LL_TIM_CLOCKDIVISION_DIV1;
   TIM_InitStruct.RepetitionCounter = 0;
   LL_TIM_Init(TIM17, &TIM_InitStruct);
@@ -587,6 +613,7 @@ static void TIM17_Init(void)
 
 /**
   * @brief  This function is executed in case of error occurrence.
+  * @param None
   * @retval None
   */
 void Error_Handler(void)
@@ -599,8 +626,7 @@ void Error_Handler(void)
   }
   /* USER CODE END Error_Handler_Debug */
 }
-
-#ifdef  USE_FULL_ASSERT
+#ifdef USE_FULL_ASSERT
 /**
   * @brief  Reports the name of the source file and the source line number
   *         where the assert_param error has occurred.

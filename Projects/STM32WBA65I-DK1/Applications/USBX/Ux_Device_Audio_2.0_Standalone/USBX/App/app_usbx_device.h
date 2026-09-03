@@ -32,7 +32,7 @@ extern "C" {
 #include "ux_dcd_stm32.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "app_conf.h"
+
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/
@@ -41,11 +41,9 @@ extern "C" {
 /* USER CODE END ET */
 
 /* Exported constants --------------------------------------------------------*/
-#define USBX_DEVICE_APP_MEMORY_BUFFER_SIZE  60 * 1024
-#define USBX_DEVICE_MEMORY_STACK_SIZE       53 * 1024
 
 /* USER CODE BEGIN EC */
-void Set_USB_State(uint8_t state);
+
 /* USER CODE END EC */
 
 /* Exported macro ------------------------------------------------------------*/
@@ -59,8 +57,7 @@ UINT MX_USBX_Device_Stack_Init(void);
 UINT MX_USBX_Device_Stack_DeInit(void);
 
 /* USER CODE BEGIN EFP */
-VOID USBX_Device_Process();
-
+VOID USBX_Device_Process(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/

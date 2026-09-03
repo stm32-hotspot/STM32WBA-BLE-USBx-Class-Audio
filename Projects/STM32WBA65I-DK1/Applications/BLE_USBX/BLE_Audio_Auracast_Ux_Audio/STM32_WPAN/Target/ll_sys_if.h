@@ -27,6 +27,7 @@ extern "C" {
 #endif
 
 /* Includes ------------------------------------------------------------------*/
+#include "stdint.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -39,17 +40,23 @@ extern "C" {
 /* USER CODE END ET */
 
 /* Exported constants --------------------------------------------------------*/
-#define DRIFT_TIME_DEFAULT                      (13)
+#define DRIFT_TIME_DEFAULT                      (14)
 #define DRIFT_TIME_EXTRA_LSI2                   (9)
 #define DRIFT_TIME_EXTRA_GCC_DEBUG              (6)
 
-#define EXEC_TIME_DEFAULT                       (26)
+#define EXEC_TIME_DEFAULT                       (28)
 #define EXEC_TIME_EXTRA_LSI2                    (3)
 #define EXEC_TIME_EXTRA_GCC_DEBUG               (4)
 
 #define SCHDL_TIME_DEFAULT                      (20)
 /* USER CODE BEGIN EC */
+#define DRIFT_TIME_OPTIMIZED                    (13)
+#define EXEC_TIME_OPTIMIZED                     (24)
 
+#undef DRIFT_TIME_DEFAULT
+#define DRIFT_TIME_DEFAULT                      DRIFT_TIME_OPTIMIZED
+#undef EXEC_TIME_DEFAULT
+#define EXEC_TIME_DEFAULT                       EXEC_TIME_OPTIMIZED
 /* USER CODE END EC */
 
 /* External variables --------------------------------------------------------*/
@@ -63,6 +70,16 @@ extern "C" {
 /* USER CODE END EM */
 
 /* Exported functions prototypes ---------------------------------------------*/
+/**
+ * @brief Apply CTE settings
+ * @param  None
+ * @retval None
+ */
+void ll_sys_apply_cte_settings(void);
+#if (CFG_LPM_STANDBY_SUPPORTED == 0)
+void ll_sys_get_ble_profile_statistics(uint32_t* exec_time, uint32_t* drift_time, uint32_t* average_drift_time, uint8_t reset);
+#endif
+
 /* USER CODE BEGIN EFP */
 
 /* USER CODE END EFP */
